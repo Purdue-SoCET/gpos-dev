@@ -1,11 +1,11 @@
 prefix          := /usr/local
-abs_top_src_dir := /home/asicfab/a/akhauv/RISCVBusiness/riscv-tests
-XLEN            := yes
-target_alias    := 32
+abs_top_src_dir := /home/asicfab/a/akhauv/gpos-dev
+XLEN            := 64
+target_alias    := 
 RISCV_PREFIX_VAR :=
 # hack below, because configure outputs XLEN as 'yes' for some stupid reason...
 ifneq ($(target_alias),)
-XLEN            := 32
+XLEN            := 
 endif
 instbasedir     := $(DESTDIR)$(prefix)
 bmarkdir        := $(abs_top_src_dir)/benchmarks
