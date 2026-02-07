@@ -27,6 +27,7 @@ RV32_CFLAGS := -march=rv32g -mabi=ilp32
 
 INCLUDES := \
 	-I$(src_dir)/../env/v \
+	-I$(src_dir)/../env \
 	-I$(src_dir)/macros/scalar
 
 LINKER_SCRIPT := \
