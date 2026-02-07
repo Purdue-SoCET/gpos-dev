@@ -16,7 +16,7 @@ struct procent {
     pri16   prprio; //process priority
     char    *prstkptr; //stack pointer
     char    *prstkbase; //base of runtime stack
-    uint32  *prstklen; //stack length in bytes
+    uint32  prstklen; //stack length in bytes
     //char    prname[PNMLEN] //process name
     sid32   prsem; //semaphore for process
     pid32   prparent; //ID of creating process
