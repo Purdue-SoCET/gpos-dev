@@ -162,3 +162,9 @@ trap_entry:
 
   move  a0, sp
   j handle_trap
+
+.global done
+done:
+.global __sim_halt
+__sim_halt:
+  j __sim_halt
