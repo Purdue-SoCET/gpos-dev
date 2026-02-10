@@ -31,7 +31,7 @@ INCLUDES := \
 	-I$(src_dir)/macros/scalar
 
 LINKER_SCRIPT := \
-	-T$(src_dir)/../env/v/link.ld
+	-T$(src_dir)/../env/link.ld
 
 KERNEL_SRCS := \
 	$(src_dir)/../env/v/entry.S \
