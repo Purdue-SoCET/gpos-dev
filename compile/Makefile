@@ -34,8 +34,8 @@ LINKER_SCRIPT := \
 	-T$(src_dir)/../env/link.ld
 
 KERNEL_SRCS := \
-	$(src_dir)/../env/v/entry.S \
-	$(src_dir)/../env/v/*.c
+	$(src_dir)/../env/entry.S \
+	$(src_dir)/../env/*.c
 
 
 #------------------------------------------------------------
