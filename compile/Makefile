@@ -6,7 +6,7 @@ src_dir := ./src
 
 build_dir := .
 
-test_name := rv32ui-v-add
+test_name := add
 
 default: all
 
@@ -48,7 +48,7 @@ KERNEL_SRCS := \
 	$(RISCV_OBJDUMP) $< > $@
 
 
-$(build_dir)/$(test_name): $(src_dir)/rv32ui/add.S
+$(build_dir)/$(test_name): $(src_dir)/add.S
 	$(RISCV_GCC) $(RV32_CFLAGS) $(RISCV_GCC_OPTS) \
 		-DENTROPY=0x$(shell echo $@ | md5sum | cut -c 1-7) \
 		-std=gnu99 -O2 \
