@@ -16,6 +16,7 @@ SECTIONS
   .tohost : { *(.tohost) }
 
   . = ALIGN(0x1000);
+
   .preinit_array :
   {
       PROVIDE(__preinit_array_start = .);
@@ -45,8 +46,28 @@ SECTIONS
   }
 
   . = ALIGN(0x1000);
-  .data : { *(.data) }
-  .bss : { *(.bss) }
-  _end = .;
+  .data : { 
+    *(.data .data.*)
+    *(.rodata .rodata.*)
+    *(.sdata .sdata.*)
+    *(.eh_frame .eh_frame.*)
+  }
+
+  PROVIDE(_edata = .);
+
+  PROVIDE(__bss_start = .);
+  .bss : 
+  {
+    *(.sbss .sbss.*)
+    *(.bss .bss.*) 
+  }
+
+  PROVIDE(__bss_end = .);
+  PROVIDE(_end = .);
+  PROVIDE(__global_pointer$ = .);
+
+  . = ALIGN(0x1000);
+  PROVIDE(__heap_start = .);
+  PROVIDE(__stack_top = ORIGIN(RAM) + LENGTH(RAM));
 }
 
