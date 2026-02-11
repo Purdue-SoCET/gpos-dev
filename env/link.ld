@@ -1,4 +1,8 @@
-OUTPUT_ARCH( "riscv" )
+MEMORY
+{
+  RAM : ORIGIN = 0x80000000, LENGTH = 1024M
+}
+
 ENTRY(_start)
 
 SECTIONS
