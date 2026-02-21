@@ -1,7 +1,12 @@
 
 #include <stdint.h>
-#include "csr.h"
+#include "../../env/csr.h"
 #include "utility.h"
+
+void user_main();
+
+extern void m_mode_table(void);
+extern void s_mode_table(void);
 
 // For this test: need to subtract 0xFE from flag to make flag = 1
 // Each handler should be called once. If not, flag will be wrong
@@ -30,7 +35,40 @@ void s_entry(void) {
     __builtin_unreachable();
 }
 
-int user_main() {
+
+void __attribute__((interrupt)) __attribute__((aligned(4))) exception_handler() {
+    uint32_t mcause = CSRR("mcause");
+    if (mcause == EX_ECALL_SMODE) {
+        uint32_t fid, ext;
+        asm volatile("mv %0, a6" : "=r"(fid));
+        asm volatile("mv %0, a7" : "=r"(ext));
+
+        switch (fid) {
+            case 1:
+                default_handler();
+                break;
+            case 2:
+                default_handler();
+                break;
+            case 3:
+                default_handler();
+                break;
+            case 4:
+                default_handler();
+                break;
+            case 5:
+                timer_handler();
+                break;
+            default:
+                break;
+        }
+        advance_mepc(4);
+        return;
+    }
+    default_handler();
+}
+
+void user_main() {
     *MTIMECMPH = 0x00;
     *MTIMECMP  = 0xFF;
 
@@ -49,8 +87,6 @@ int user_main() {
     /*while(1) {
         asm volatile("wfi");
     } */
-
-    return 0;
 
 }
 

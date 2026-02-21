@@ -154,7 +154,10 @@ void mtip_handler()      __attribute__((interrupt)) __attribute__((aligned(4)));
 void seip_handler()      __attribute__((interrupt)) __attribute__((aligned(4)));
 void meip_handler()      __attribute__((interrupt)) __attribute__((aligned(4)));
 void lcofip_handler()    __attribute__((interrupt)) __attribute__((aligned(4)));
+void timer_handler()    __attribute__((interrupt)) __attribute__((aligned(4)));
 noreturn void unreachable_handler();
+noreturn void enter_s_mode(void (*s_entry)(void));
+noreturn void enter_u_mode(void (*u_entry)(void));
 
 void read_exception_context(exception_context_t *);
 void read_exception_context_s(exception_context_t*);
@@ -171,6 +174,21 @@ void enable_interrupts_m();
 void disable_interrupts_m();
 void enable_interrupts_save_m(uint32_t restore);
 uint32_t disable_interrupts_save_m();
+
+void setup_interrupts_s(void *handler_addr, uint32_t sie_value);
+void setup_interrupt_s_vectored(void *table_addr, uint32_t sie_value);
+
+void enable_interrupts_s();
+void disable_interrupts_s();
+void enable_interupts_save_s(uint32_t restore);
+uint32_t disable_interrupts_save_s();
+void delegate_traps_to_s(uint32_t medeleg_mask, uint32_t mideleg_mask);
+
+void setup_timer_interrupt(void);
+
+noreturn void enter_s_mode(void (*s_entry)(void));
+noreturn void enter_u_mode(void (*u_entry)(void));
+
 
 bool check_supervisor_mode_available();
 void require_supervisor_mode();
