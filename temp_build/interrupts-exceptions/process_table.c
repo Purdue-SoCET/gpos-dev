@@ -7,10 +7,10 @@
 int queue[5] = {1, 2, 3, 4, 5};
 int index = 0;
 
-void set_timer(int value, int valueh) {
-    *MTIMECMPH = *MTIME + valueh;
-    *MTIMECMP = *MTIME + value;
-}
+//void set_timer(int valueh, int value) {
+//    *MTIMECMPH = *MTIME + valueh;
+//    *MTIMECMP = *MTIME + value;
+//}
 
 // For this test: need to subtract 0xFE from flag to make flag = 1
 // Each handler should be called once. If not, flag will be wrong
@@ -26,7 +26,7 @@ void meip_handler() {
 void mtip_handler() {
     print("mtip handling....");
     //flag -= 0xE0;
-    set_timer(
+    //set_timer(0, 5000); 
     *MTIMECMP = *MTIME + 5000; // setting mtimecmph makes a very large value
     index++;
     print("Handled. Index at %d", index); 
