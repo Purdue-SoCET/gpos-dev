@@ -114,6 +114,17 @@ bool check_supervisor_mode_available() {
     return (mstatus_value & MSTATUS_MPP) == (0b01 << 11);
 }
 
+void require_supervisor_mode() {
+    if(!check_supervisor_mode_available()) {
+        print("Enable Supervisor to run this test");
+        flag = -1; // set flag to 0xFFFF_FFFF to indicate fail
+        done();
+        __builtin_unreachable();
+    }
+}
+
+
+
 void read_exception_context(exception_context_t *ctx) {
     ctx->cycle  = CSRR("cycle");
     ctx->time   = CSRR("time");
