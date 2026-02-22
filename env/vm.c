@@ -3,18 +3,13 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <format.h>
 
 #include "riscv_test.h"
 
 #define SYS_write 64
 
-#if __riscv_xlen == 32
 # define SATP_MODE_CHOICE SATP_MODE_SV32
-#elif defined(Sv48)
-# define SATP_MODE_CHOICE SATP_MODE_SV48
-#else
-# define SATP_MODE_CHOICE SATP_MODE_SV39
-#endif
 
 void trap_entry();
 void pop_tf(trapframe_t*);
@@ -28,44 +23,10 @@ static void do_tohost(uint64_t tohost_value)
   asm volatile ("fence.i" : : :);
 }
 
-#define kaa2pa(aa) ((uintptr_t)(aa) & (uintptr_t)(~(-MEGAPAGE_SIZE)) | (uintptr_t)(DRAM_BASE))
 #define pa2kva(pa) ((void*)(pa) - DRAM_BASE - MEGAPAGE_SIZE)
 #define uva2kva(pa) ((void*)(pa) - MEGAPAGE_SIZE)
 
 #define flush_page(addr) asm volatile ("sfence.vma %0" : : "r" (addr) : "memory")
-
-static uint64_t lfsr63(uint64_t x)
-{
-  uint64_t bit = (x ^ (x >> 1)) & 1;
-  return (x >> 1) | (bit << 62);
-}
-
-static void cputchar(int x)
-{
-#if __riscv_xlen == 32
-  // HTIF devices are not supported on RV32, so proxy a write system call
-  volatile uint64_t syscall_struct[8];
-  volatile int buff = x;
-  syscall_struct[0] = SYS_write;
-  syscall_struct[1] = 1;
-  syscall_struct[2] = kaa2pa(&buff);
-  syscall_struct[3] = 1;
-  do_tohost(kaa2pa(&syscall_struct));
-  // Wait for response as struct has to be read by HTIF
-  while(!fromhost);
-#else
-  do_tohost(0x0101000000000000 | (unsigned char)x);
-#endif
-}
-
-static void cputstring(const char* s)
-{
-  size_t len = strlen(s);
-  for (size_t i = 0; i < len; i++) {
-    cputchar(*s++);
-  }
-  cputchar('\n');
-}
 
 static void terminate(int code)
 {
@@ -82,28 +43,12 @@ void wtf()
 #define stringify(x) stringify1(x)
 #define assert(x) do { \
   if (x) break; \
-  cputstring("Assertion failed: " stringify(x) "\n"); \
+  print("Assertion failed: " stringify(x) "\n"); \
   terminate(3); \
 } while(0)
-
-#define l1pt pt[0]
-#define user_l2pt pt[1]
-#if SATP_MODE_CHOICE == SATP_MODE_SV48
-# define NPT 6
-# define kernel_l2pt pt[2]
-# define kernel_l3pt pt[3]
-# define user_l3pt pt[4]
-# define user_llpt pt[5]
-#elif SATP_MODE_CHOICE == SATP_MODE_SV39
-# define NPT 4
-# define kernel_l2pt pt[2]
-# define user_llpt pt[3]
-#elif SATP_MODE_CHOICE == SATP_MODE_SV32
+# define l1pt_ind pt[0]
+# define user_l2pt_ind pt[1]
 # define NPT 2
-# define user_llpt user_l2pt
-#else
-# error Unknown SATP_MODE_CHOICE
-#endif
 pte_t pt[NPT][PTES_PER_PT] __attribute__((aligned(PGSIZE)));
 
 typedef struct { pte_t addr; void* next; } freelist_t;
@@ -111,19 +56,6 @@ typedef struct { pte_t addr; void* next; } freelist_t;
 freelist_t user_mapping[MAX_TEST_PAGES];
 freelist_t freelist_nodes[MAX_TEST_PAGES];
 freelist_t *freelist_head, *freelist_tail;
-
-void printhex(uint64_t x)
-{
-  char str[17];
-  for (int i = 0; i < 16; i++)
-  {
-    str[15-i] = (x & 0xF) + ((x & 0xF) < 10 ? '0' : 'a'-10);
-    x >>= 4;
-  }
-  str[16] = 0;
-
-  cputstring(str);
-}
 
 static void evict(unsigned long addr)
 {
@@ -134,10 +66,10 @@ static void evict(unsigned long addr)
   if (node->addr)
   {
     // check accessed and dirty bits
-    assert(user_llpt[addr/PGSIZE] & PTE_A);
+    assert(user_l2pt_ind[addr/PGSIZE] & PTE_A);
     uintptr_t sstatus = set_csr(sstatus, SSTATUS_SUM);
     if (memcmp((void*)addr, uva2kva(addr), PGSIZE)) {
-      assert(user_llpt[addr/PGSIZE] & PTE_D);
+      assert(user_l2pt_ind[addr/PGSIZE] & PTE_D);
       memcpy(uva2kva(addr), (void*)addr, PGSIZE);
     }
     write_csr(sstatus, sstatus);
@@ -165,12 +97,14 @@ void handle_fault(uintptr_t addr, uintptr_t cause)
   assert(addr >= PGSIZE && addr < MAX_TEST_PAGES * PGSIZE);
   addr = addr/PGSIZE*PGSIZE;
 
-  if (user_llpt[addr/PGSIZE]) {
-    if (!(user_llpt[addr/PGSIZE] & PTE_A)) {
-      user_llpt[addr/PGSIZE] |= PTE_A;
+  // page table already loaded
+  pte_t* pte_ptr = &user_l2pt_ind[addr/PGSIZE];
+  if (*pte_ptr) {
+    if (!(*pte_ptr & PTE_A)) {
+      *pte_ptr |= PTE_A;
     } else {
-      assert(!(user_llpt[addr/PGSIZE] & PTE_D) && cause == CAUSE_STORE_PAGE_FAULT);
-      user_llpt[addr/PGSIZE] |= PTE_D;
+      assert(!(*pte_ptr & PTE_D) && cause == CAUSE_STORE_PAGE_FAULT);
+      *pte_ptr |= PTE_D;
     }
     flush_page(addr);
     return;
@@ -188,7 +122,7 @@ void handle_fault(uintptr_t addr, uintptr_t cause)
       new_pte = (node->addr >> PGSHIFT << PTE_PPN_SHIFT) | filter_encodings;
   }
 
-  user_llpt[addr/PGSIZE] = new_pte | PTE_A | PTE_D;
+  user_l2pt_ind[addr/PGSIZE] = new_pte | PTE_A | PTE_D;
   flush_page(addr);
 
   assert(user_mapping[addr/PGSIZE].addr == 0);
@@ -198,7 +132,7 @@ void handle_fault(uintptr_t addr, uintptr_t cause)
   memcpy((void*)addr, uva2kva(addr), PGSIZE);
   write_csr(sstatus, sstatus);
 
-  user_llpt[addr/PGSIZE] = new_pte;
+  user_l2pt_ind[addr/PGSIZE] = new_pte;
   flush_page(addr);
 
   asm volatile ("fence.i");
@@ -206,34 +140,14 @@ void handle_fault(uintptr_t addr, uintptr_t cause)
 
 void handle_trap(trapframe_t* tf)
 {
-  if (trap_filter(tf)) {
-    pop_tf(tf);
-  }
-
   if (tf->cause == CAUSE_USER_ECALL)
   {
     int n = tf->gpr[10];
 
-    // ICEBOX(wrcunnin): figure out if we REALLY need this...
-    // for (long i = 1; i < MAX_TEST_PAGES; i++)
-    //   evict(i*PGSIZE);
-
     terminate(n);
   }
-  else if (tf->cause == CAUSE_ILLEGAL_INSTRUCTION)
-  {
-    assert(tf->epc % 4 == 0);
-
-    int* fssr;
-    asm ("jal %0, 1f; fssr x0; 1:" : "=r"(fssr));
-
-    if (*(int*)tf->epc == *fssr)
-      terminate(1); // FP test on non-FP hardware.  "succeed."
-    else
-      assert(!"illegal instruction");
-    tf->epc += 4;
-  }
-  else if (tf->cause == CAUSE_FETCH_PAGE_FAULT || tf->cause == CAUSE_LOAD_PAGE_FAULT || tf->cause == CAUSE_STORE_PAGE_FAULT)
+  
+  if (tf->cause == CAUSE_FETCH_PAGE_FAULT || tf->cause == CAUSE_LOAD_PAGE_FAULT || tf->cause == CAUSE_STORE_PAGE_FAULT)
     handle_fault(tf->badvaddr, tf->cause);
   else
     assert(!"unexpected exception");
@@ -241,29 +155,12 @@ void handle_trap(trapframe_t* tf)
   pop_tf(tf);
 }
 
-static void coherence_torture()
-{
-  // cause coherence misses without affecting program semantics
-  uint64_t random = ENTROPY;
-  while (1) {
-    uintptr_t paddr = DRAM_BASE + ((random % (2 * (MAX_TEST_PAGES + 1) * PGSIZE)) & -4);
-    // ICEBOX(anyone): revert when atomic support is added
-// #ifdef __riscv_atomic
-//     if (random & 1) // perform a no-op write
-//       asm volatile ("amoadd.w zero, zero, (%0)" :: "r"(paddr));
-//     else // perform a read
-// #endif
-//       asm volatile ("lw zero, (%0)" :: "r"(paddr));
-    asm volatile ("lw zero, (%0)" :: "r"(paddr));
-    random = lfsr63(random);
-  }
-}
-
 void vm_boot(uintptr_t test_addr)
 {
+  print("hello world\n");
+
   uint64_t random = ENTROPY;
-  if (read_csr(mhartid) > 0)
-    coherence_torture();
+  if (read_csr(mhartid) > 0) return;
 
   _Static_assert(SIZEOF_TRAPFRAME_T == sizeof(trapframe_t), "???");
 
@@ -271,25 +168,11 @@ void vm_boot(uintptr_t test_addr)
 # error
 #endif
   // map user to lowermost megapage
-  l1pt[0] = ((pte_t)user_l2pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
+  l1pt_ind[0] = ((pte_t)user_l2pt_ind >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
   // map kernel to uppermost megapage
-#if SATP_MODE_CHOICE == SATP_MODE_SV48
-  l1pt[PTES_PER_PT-1] = ((pte_t)kernel_l2pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
-  kernel_l2pt[PTES_PER_PT-1] = ((pte_t)kernel_l3pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
-  kernel_l3pt[PTES_PER_PT-1] = (DRAM_BASE/RISCV_PGSIZE << PTE_PPN_SHIFT) | PTE_V | PTE_R | PTE_W | PTE_X | PTE_A | PTE_D;
-  user_l2pt[0] = ((pte_t)user_l3pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
-  user_l3pt[0] = ((pte_t)user_llpt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
-#elif SATP_MODE_CHOICE == SATP_MODE_SV39
-  l1pt[PTES_PER_PT-1] = ((pte_t)kernel_l2pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
-  kernel_l2pt[PTES_PER_PT-1] = (DRAM_BASE/RISCV_PGSIZE << PTE_PPN_SHIFT) | PTE_V | PTE_R | PTE_W | PTE_X | PTE_A | PTE_D;
-  user_l2pt[0] = ((pte_t)user_llpt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
-#elif SATP_MODE_CHOICE == SATP_MODE_SV32
-  l1pt[PTES_PER_PT-1] = (DRAM_BASE/RISCV_PGSIZE << PTE_PPN_SHIFT) | PTE_V | PTE_R | PTE_W | PTE_X | PTE_A | PTE_D;
-#else
-# error
-#endif
+  l1pt_ind[PTES_PER_PT-1] = (DRAM_BASE/RISCV_PGSIZE << PTE_PPN_SHIFT) | PTE_V | PTE_R | PTE_W | PTE_X | PTE_A | PTE_D;
   uintptr_t vm_choice = SATP_MODE_CHOICE;
-  uintptr_t satp_value = ((uintptr_t)l1pt >> PGSHIFT)
+  uintptr_t satp_value = ((uintptr_t)l1pt_ind >> PGSHIFT)
                         | (vm_choice * (SATP_MODE & ~(SATP_MODE<<1)));
   write_csr(satp, satp_value);
   if (read_csr(satp) != satp_value)
