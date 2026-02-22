@@ -46,11 +46,9 @@ void wtf()
   print("Assertion failed: " stringify(x) "\n"); \
   terminate(3); \
 } while(0)
-
-#define l1pt pt[0]
-#define user_l2pt pt[1]
+# define l1pt_ind pt[0]
+# define user_l2pt_ind pt[1]
 # define NPT 2
-# define user_llpt user_l2pt
 pte_t pt[NPT][PTES_PER_PT] __attribute__((aligned(PGSIZE)));
 
 typedef struct { pte_t addr; void* next; } freelist_t;
@@ -68,10 +66,10 @@ static void evict(unsigned long addr)
   if (node->addr)
   {
     // check accessed and dirty bits
-    assert(user_llpt[addr/PGSIZE] & PTE_A);
+    assert(user_l2pt_ind[addr/PGSIZE] & PTE_A);
     uintptr_t sstatus = set_csr(sstatus, SSTATUS_SUM);
     if (memcmp((void*)addr, uva2kva(addr), PGSIZE)) {
-      assert(user_llpt[addr/PGSIZE] & PTE_D);
+      assert(user_l2pt_ind[addr/PGSIZE] & PTE_D);
       memcpy(uva2kva(addr), (void*)addr, PGSIZE);
     }
     write_csr(sstatus, sstatus);
@@ -99,12 +97,14 @@ void handle_fault(uintptr_t addr, uintptr_t cause)
   assert(addr >= PGSIZE && addr < MAX_TEST_PAGES * PGSIZE);
   addr = addr/PGSIZE*PGSIZE;
 
-  if (user_llpt[addr/PGSIZE]) {
-    if (!(user_llpt[addr/PGSIZE] & PTE_A)) {
-      user_llpt[addr/PGSIZE] |= PTE_A;
+  // page table already loaded
+  pte_t* pte_ptr = &user_l2pt_ind[addr/PGSIZE];
+  if (*pte_ptr) {
+    if (!(*pte_ptr & PTE_A)) {
+      *pte_ptr |= PTE_A;
     } else {
-      assert(!(user_llpt[addr/PGSIZE] & PTE_D) && cause == CAUSE_STORE_PAGE_FAULT);
-      user_llpt[addr/PGSIZE] |= PTE_D;
+      assert(!(*pte_ptr & PTE_D) && cause == CAUSE_STORE_PAGE_FAULT);
+      *pte_ptr |= PTE_D;
     }
     flush_page(addr);
     return;
@@ -122,7 +122,7 @@ void handle_fault(uintptr_t addr, uintptr_t cause)
       new_pte = (node->addr >> PGSHIFT << PTE_PPN_SHIFT) | filter_encodings;
   }
 
-  user_llpt[addr/PGSIZE] = new_pte | PTE_A | PTE_D;
+  user_l2pt_ind[addr/PGSIZE] = new_pte | PTE_A | PTE_D;
   flush_page(addr);
 
   assert(user_mapping[addr/PGSIZE].addr == 0);
@@ -132,7 +132,7 @@ void handle_fault(uintptr_t addr, uintptr_t cause)
   memcpy((void*)addr, uva2kva(addr), PGSIZE);
   write_csr(sstatus, sstatus);
 
-  user_llpt[addr/PGSIZE] = new_pte;
+  user_l2pt_ind[addr/PGSIZE] = new_pte;
   flush_page(addr);
 
   asm volatile ("fence.i");
@@ -168,11 +168,11 @@ void vm_boot(uintptr_t test_addr)
 # error
 #endif
   // map user to lowermost megapage
-  l1pt[0] = ((pte_t)user_l2pt >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
+  l1pt_ind[0] = ((pte_t)user_l2pt_ind >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
   // map kernel to uppermost megapage
-  l1pt[PTES_PER_PT-1] = (DRAM_BASE/RISCV_PGSIZE << PTE_PPN_SHIFT) | PTE_V | PTE_R | PTE_W | PTE_X | PTE_A | PTE_D;
+  l1pt_ind[PTES_PER_PT-1] = (DRAM_BASE/RISCV_PGSIZE << PTE_PPN_SHIFT) | PTE_V | PTE_R | PTE_W | PTE_X | PTE_A | PTE_D;
   uintptr_t vm_choice = SATP_MODE_CHOICE;
-  uintptr_t satp_value = ((uintptr_t)l1pt >> PGSHIFT)
+  uintptr_t satp_value = ((uintptr_t)l1pt_ind >> PGSHIFT)
                         | (vm_choice * (SATP_MODE & ~(SATP_MODE<<1)));
   write_csr(satp, satp_value);
   if (read_csr(satp) != satp_value)
