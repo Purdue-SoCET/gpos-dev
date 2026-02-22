@@ -140,30 +140,14 @@ void handle_fault(uintptr_t addr, uintptr_t cause)
 
 void handle_trap(trapframe_t* tf)
 {
-  if (trap_filter(tf)) {
-    pop_tf(tf);
-  }
-
   if (tf->cause == CAUSE_USER_ECALL)
   {
     int n = tf->gpr[10];
 
     terminate(n);
   }
-  else if (tf->cause == CAUSE_ILLEGAL_INSTRUCTION)
-  {
-    assert(tf->epc % 4 == 0);
-
-    int* fssr;
-    asm ("jal %0, 1f; fssr x0; 1:" : "=r"(fssr));
-
-    if (*(int*)tf->epc == *fssr)
-      terminate(1); // FP test on non-FP hardware.  "succeed."
-    else
-      assert(!"illegal instruction");
-    tf->epc += 4;
-  }
-  else if (tf->cause == CAUSE_FETCH_PAGE_FAULT || tf->cause == CAUSE_LOAD_PAGE_FAULT || tf->cause == CAUSE_STORE_PAGE_FAULT)
+  
+  if (tf->cause == CAUSE_FETCH_PAGE_FAULT || tf->cause == CAUSE_LOAD_PAGE_FAULT || tf->cause == CAUSE_STORE_PAGE_FAULT)
     handle_fault(tf->badvaddr, tf->cause);
   else
     assert(!"unexpected exception");
