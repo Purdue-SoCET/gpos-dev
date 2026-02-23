@@ -119,10 +119,6 @@ void handle_fault(uintptr_t addr, uintptr_t cause)
 
   uintptr_t new_pte = (node->addr >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V | PTE_U | PTE_R | PTE_W | PTE_X;
 
-  if (pf_filter(addr, &filter_encodings, &copy_page)) {
-      new_pte = (node->addr >> PGSHIFT << PTE_PPN_SHIFT) | filter_encodings;
-  }
-
   l2pt_user[addr/PGSIZE] = new_pte | PTE_A | PTE_D;
   flush_page(addr);
 

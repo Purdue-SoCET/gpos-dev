@@ -28,12 +28,7 @@
 extra_boot:                                                             \
         EXTRA_INIT                                                      \
         ret;                                                            \
-.global pf_filter;                                                      \
-pf_filter:                                                              \
-        FILTER_PAGE_FAULT                                               \
-        li a0, 0;                                                       \
-        ret;                                                            \
-        .global userstart;                                              \
+.global userstart;                                              \
 userstart:                                                              \
         init
 
