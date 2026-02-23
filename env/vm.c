@@ -16,6 +16,7 @@ void pop_tf(trapframe_t*);
 
 extern volatile uint64_t tohost;
 extern volatile uint64_t fromhost;
+extern int main(void);
 
 static void do_tohost(uint64_t tohost_value)
 {
@@ -61,6 +62,7 @@ static void evict(unsigned long addr)
   assert(addr >= PGSIZE && addr < MAX_TEST_PAGES * PGSIZE);
   addr = addr/PGSIZE*PGSIZE;
 
+  // TODO: do node.mapping or whatever, i don't like this readability man
   freelist_t* node = &user_mapping[addr/PGSIZE];
   if (node->addr)
   {
@@ -146,7 +148,7 @@ void handle_trap(trapframe_t* tf)
   pop_tf(tf);
 }
 
-void vm_boot(uintptr_t test_addr)
+void vm_boot()
 {
   print("hello world\n");
 
@@ -207,6 +209,6 @@ void vm_boot(uintptr_t test_addr)
 
   trapframe_t tf;
   memset(&tf, 0, sizeof(tf));
-  tf.epc = test_addr - DRAM_BASE;
+  tf.epc = (uintptr_t) main - DRAM_BASE;
   pop_tf(&tf);
 }
