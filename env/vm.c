@@ -46,10 +46,9 @@ void wtf()
   print("Assertion failed: " stringify(x) "\n"); \
   terminate(3); \
 } while(0)
-# define l1pt_ind pt[0]
-# define user_l2pt_ind pt[1]
-# define NPT 2
-pte_t pt[NPT][PTES_PER_PT] __attribute__((aligned(PGSIZE)));
+
+pte_t l1pt[PTES_PER_PT] __attribute__((aligned(PGSIZE)));
+pte_t l2pt_user[PTES_PER_PT] __attribute__((aligned(PGSIZE)));
 
 typedef struct { pte_t addr; void* next; } freelist_t;
 
@@ -66,10 +65,10 @@ static void evict(unsigned long addr)
   if (node->addr)
   {
     // check accessed and dirty bits
-    assert(user_l2pt_ind[addr/PGSIZE] & PTE_A);
+    assert(l2pt_user[addr/PGSIZE] & PTE_A);
     uintptr_t sstatus = set_csr(sstatus, SSTATUS_SUM);
     if (memcmp((void*)addr, uva2kva(addr), PGSIZE)) {
-      assert(user_l2pt_ind[addr/PGSIZE] & PTE_D);
+      assert(l2pt_user[addr/PGSIZE] & PTE_D);
       memcpy(uva2kva(addr), (void*)addr, PGSIZE);
     }
     write_csr(sstatus, sstatus);
@@ -86,19 +85,15 @@ static void evict(unsigned long addr)
   }
 }
 
-extern int pf_filter(uintptr_t addr, uintptr_t *pte, int *copy);
-extern int trap_filter(trapframe_t *tf);
-
 void handle_fault(uintptr_t addr, uintptr_t cause)
 {
-  uintptr_t filter_encodings = 0;
-  int copy_page = 1;
-
+  // this is hard-coded to reference l1pt[0]
+  // we can add more and additional logic so it's not hard-coded
   assert(addr >= PGSIZE && addr < MAX_TEST_PAGES * PGSIZE);
   addr = addr/PGSIZE*PGSIZE;
 
   // page table already loaded
-  pte_t* pte_ptr = &user_l2pt_ind[addr/PGSIZE];
+  pte_t* pte_ptr = &l2pt_user[addr/PGSIZE];
   if (*pte_ptr) {
     if (!(*pte_ptr & PTE_A)) {
       *pte_ptr |= PTE_A;
@@ -118,11 +113,7 @@ void handle_fault(uintptr_t addr, uintptr_t cause)
 
   uintptr_t new_pte = (node->addr >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V | PTE_U | PTE_R | PTE_W | PTE_X;
 
-  if (pf_filter(addr, &filter_encodings, &copy_page)) {
-      new_pte = (node->addr >> PGSHIFT << PTE_PPN_SHIFT) | filter_encodings;
-  }
-
-  user_l2pt_ind[addr/PGSIZE] = new_pte | PTE_A | PTE_D;
+  l2pt_user[addr/PGSIZE] = new_pte | PTE_A | PTE_D;
   flush_page(addr);
 
   assert(user_mapping[addr/PGSIZE].addr == 0);
@@ -132,7 +123,7 @@ void handle_fault(uintptr_t addr, uintptr_t cause)
   memcpy((void*)addr, uva2kva(addr), PGSIZE);
   write_csr(sstatus, sstatus);
 
-  user_l2pt_ind[addr/PGSIZE] = new_pte;
+  l2pt_user[addr/PGSIZE] = new_pte;
   flush_page(addr);
 
   asm volatile ("fence.i");
@@ -168,11 +159,12 @@ void vm_boot(uintptr_t test_addr)
 # error
 #endif
   // map user to lowermost megapage
-  l1pt_ind[0] = ((pte_t)user_l2pt_ind >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
+  // hard-coded: there's only the user and kernel page tables
+  l1pt[0] = ((pte_t)l2pt_user >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
   // map kernel to uppermost megapage
-  l1pt_ind[PTES_PER_PT-1] = (DRAM_BASE/RISCV_PGSIZE << PTE_PPN_SHIFT) | PTE_V | PTE_R | PTE_W | PTE_X | PTE_A | PTE_D;
+  l1pt[PTES_PER_PT-1] = (DRAM_BASE/RISCV_PGSIZE << PTE_PPN_SHIFT) | PTE_V | PTE_R | PTE_W | PTE_X | PTE_A | PTE_D;
   uintptr_t vm_choice = SATP_MODE_CHOICE;
-  uintptr_t satp_value = ((uintptr_t)l1pt_ind >> PGSHIFT)
+  uintptr_t satp_value = ((uintptr_t)l1pt >> PGSHIFT)
                         | (vm_choice * (SATP_MODE & ~(SATP_MODE<<1)));
   write_csr(satp, satp_value);
   if (read_csr(satp) != satp_value)
