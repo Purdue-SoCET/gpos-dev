@@ -4,11 +4,19 @@
 #include "utility.h"
 #include "format.h"
 
+#define QUANTUM 2;
+
 int queue[5] = {1, 2, 3, 4, 5};
 int index = 0;
+uint64_t volatile time_remaining = QUANTUM;
+
+void reschedule_function() {
+    index++;
+    time_remaining = QUANTUM;
+    print("Index increments. Index at %d. ", index);
+}
 
 void set_timer(uint64_t value) {
-    //*MTIMECMPH = *MTIME + valueh;
     *MTIMECMP = *MTIME + value;
 }
 
@@ -16,23 +24,25 @@ void meip_handler() {
     print("meip handling....");
     *EXT_CLEAR = 0x1; // writing anything simulates clearing interrupt
     CSRW("mie", 0x088);
-    index++;
-    print("Handled. Index at %d", index);
+    //index++;
+    print("Handled. ");
 }
 
 void mtip_handler() {
     print("mtip handling...."); 
-    //*MTIMECMP = *MTIME + 5000; // setting mtimecmp
-    set_timer(5000);
-    index++;
-    print("Handled. Index at %d", index); 
+    time_remaining -= 1;
+    if (time_remaining <= 0) {	    
+    	reschedule_function();
+    }
+    set_timer(1000);
+    print("Handled. "); 
 }
 
 void msip_handler() {
     print("msip handling....");
     *MSIP = 0x0; // writing 0 clears this
-    index++;
-    print("Handled. Index at %d", index);
+    //index++;
+    print("Handled. ", index);
 }
 
 int main() {
@@ -45,7 +55,7 @@ int main() {
     *MSIP = 1;
     *EXT_SET = 1;
 
-    while (*MTIME < 0xFF);    
+    while (*MTIME < 0xFFFF);    
 	
     return 0;
 }
