@@ -61,6 +61,7 @@ static void evict(unsigned long addr)
   assert(addr >= PGSIZE && addr < MAX_TEST_PAGES * PGSIZE);
   addr = addr/PGSIZE*PGSIZE;
 
+  // TODO: do node.mapping or whatever, i don't like this readability man
   freelist_t* node = &user_mapping[addr/PGSIZE];
   if (node->addr)
   {
