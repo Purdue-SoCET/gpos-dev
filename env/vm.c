@@ -93,6 +93,8 @@ void handle_fault(uintptr_t addr, uintptr_t cause)
   uintptr_t filter_encodings = 0;
   int copy_page = 1;
 
+  // this is hard-coded to reference l1pt[0]
+  // we can add more and additional logic so it's not hard-coded
   assert(addr >= PGSIZE && addr < MAX_TEST_PAGES * PGSIZE);
   addr = addr/PGSIZE*PGSIZE;
 
@@ -167,6 +169,7 @@ void vm_boot(uintptr_t test_addr)
 # error
 #endif
   // map user to lowermost megapage
+  // hard-coded: there's only the user and kernel page tables
   l1pt[0] = ((pte_t)l2pt_user >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
   // map kernel to uppermost megapage
   l1pt[PTES_PER_PT-1] = (DRAM_BASE/RISCV_PGSIZE << PTE_PPN_SHIFT) | PTE_V | PTE_R | PTE_W | PTE_X | PTE_A | PTE_D;
