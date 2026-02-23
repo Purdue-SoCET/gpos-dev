@@ -85,14 +85,8 @@ static void evict(unsigned long addr)
   }
 }
 
-extern int pf_filter(uintptr_t addr, uintptr_t *pte, int *copy);
-extern int trap_filter(trapframe_t *tf);
-
 void handle_fault(uintptr_t addr, uintptr_t cause)
 {
-  uintptr_t filter_encodings = 0;
-  int copy_page = 1;
-
   // this is hard-coded to reference l1pt[0]
   // we can add more and additional logic so it's not hard-coded
   assert(addr >= PGSIZE && addr < MAX_TEST_PAGES * PGSIZE);
