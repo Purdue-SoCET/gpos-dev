@@ -10,6 +10,10 @@
 # define REGBYTES 4
 #endif
 
+#include "riscv_test.h"
+#include "test_macros.h"
+
+
 #define STACK_TOP (_end + RISCV_PGSIZE * 4)
 
   .section ".text.init","ax",@progbits
@@ -69,8 +73,6 @@ handle_reset:
   slli t0, t0, 12
   add sp, sp, t0
   csrw mscratch, sp
-  call extra_boot
-  la a0, userstart
   j vm_boot
 
   .globl  pop_tf

@@ -10,8 +10,9 @@
 #include "riscv_test.h"
 #include "test_macros.h"
 
-RVTEST_RV32U
-RVTEST_CODE_BEGIN
+.text
+.global main
+main:
 
   #-------------------------------------------------------------
   # Arithmetic tests
@@ -75,11 +76,11 @@ RVTEST_CODE_BEGIN
 
   TEST_PASSFAIL
 
-RVTEST_CODE_END
+  j done
 
   .data
 RVTEST_DATA_BEGIN
 
   TEST_DATA
 
-RVTEST_DATA_END
+RVTEST_DATA_END 
