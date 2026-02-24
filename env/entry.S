@@ -16,7 +16,7 @@
 
 #define STACK_TOP (_end + RISCV_PGSIZE * 4)
 
-  .section ".text.init","ax",@progbits
+.section ".text.init","ax",@progbits
   .globl _start
   .align 2
 _start:
@@ -170,3 +170,8 @@ done:
 .global __sim_halt
 __sim_halt:
   j __sim_halt
+
+.global tohost
+tohost: 
+  .dword 0
+  .size tohost, 8

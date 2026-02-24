@@ -15,7 +15,6 @@ void trap_entry();
 void pop_tf(trapframe_t*);
 
 extern volatile uint64_t tohost;
-extern volatile uint64_t fromhost;
 extern int main(void);
 
 static void do_tohost(uint64_t tohost_value)
@@ -133,13 +132,6 @@ void handle_fault(uintptr_t addr, uintptr_t cause)
 
 void handle_trap(trapframe_t* tf)
 {
-  if (tf->cause == CAUSE_USER_ECALL)
-  {
-    int n = tf->gpr[10];
-
-    terminate(n);
-  }
-  
   if (tf->cause == CAUSE_FETCH_PAGE_FAULT || tf->cause == CAUSE_LOAD_PAGE_FAULT || tf->cause == CAUSE_STORE_PAGE_FAULT)
     handle_fault(tf->badvaddr, tf->cause);
   else
