@@ -16,35 +16,20 @@ void pop_tf(trapframe_t*);
 
 extern volatile uint64_t tohost;
 extern int main(void);
+extern void done(void);
 
-static void do_tohost(uint64_t tohost_value)
-{
-  tohost = tohost_value;
-  asm volatile ("fence.i" : : :);
-}
 
 #define pa2kva(pa) ((void*)(pa) - DRAM_BASE - MEGAPAGE_SIZE)
 #define uva2kva(pa) ((void*)(pa) - MEGAPAGE_SIZE)
 
 #define flush_page(addr) asm volatile ("sfence.vma %0" : : "r" (addr) : "memory")
 
-static void terminate(int code)
-{
-  do_tohost(code);
-  while (1);
-}
-
-void wtf()
-{
-  terminate(841);
-}
-
 #define stringify1(x) #x
 #define stringify(x) stringify1(x)
 #define assert(x) do { \
   if (x) break; \
   print("Assertion failed: " stringify(x) "\n"); \
-  terminate(3); \
+  done(); \
 } while(0)
 
 pte_t l1pt[PTES_PER_PT] __attribute__((aligned(PGSIZE)));

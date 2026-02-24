@@ -25,11 +25,11 @@ _start:
   /* NMI vector */
   .align 2
 nmi_vector:
-  j wtf
+  j bad_apple
 
   .align 2
 trap_vector:
-  j wtf
+  j bad_apple
 
 handle_reset:
   li x1, 0
@@ -164,9 +164,24 @@ trap_entry:
 
   move  a0, sp
   j handle_trap
+  
 
+.global bad_apple
+bad_apple:
+    li x28, 0
+    la x27, tohost
+    sw x28, 0(x27)
+    fence.i
+    j __sim_halt
+
+# what follows is a waterfall
 .global done
 done:
+    li x28, 1
+    la x27, tohost
+    sw x28, 0(x27)
+    fence.i
+
 .global __sim_halt
 __sim_halt:
   j __sim_halt
