@@ -4,8 +4,7 @@
 #include "format.h"
 #include "utility.h"
 
-void user_main();
-
+extern void main(void);
 extern void m_mode_table(void);
 extern void s_mode_table(void);
 
@@ -15,14 +14,14 @@ void mtip_handler() {
     *MTIMECMPH = 0xFF; // setting mtimecmph makes a very large value
 }
 
-void s_entry(void) {
+void s_mode_boot(void) {
     print("s_mode entered\n");
 
     setup_interrupt_s_vectored(s_mode_table, IE_STIE | IE_SSIE | IE_SEIE);
     
     sbi_write_timer_static(1, 2);
     enable_interrupts_s();
-    enter_u_mode(user_main);
+    enter_u_mode(main);
 
     __builtin_unreachable();
 }
@@ -65,31 +64,6 @@ void __attribute__((interrupt)) __attribute__((aligned(4))) exception_handler() 
     default_handler();
 }
 
-
-
-void user_main() {
-    print("u_mode entered\n");
-
-    *MTIMECMPH = 0x00;
-    *MTIMECMP  = 0xFF;
-
-
-    *MSIP = 1;
-    *EXT_SET = 1;
-
-    while(*MTIME < 0xFF);
-
-    if (flag == 1) {
-        test_pass("All vectored interrupts handled");
-    } else {
-        test_fail("Vectored interrupts not handled correctly");
-    }
-
-    /*while(1) {
-        asm volatile("wfi");
-    } */
-
-}
 #define PMP_R     0x01
 #define PMP_W     0x02
 #define PMP_X     0x04
@@ -101,7 +75,7 @@ void user_main() {
 #define PMP_NA4   0x10
 #define PMP_NAPOT 0x18
 
-int main() {
+int m_mode_boot() {
     
     //kernel boot stuff later will get separated into kernel main or whatever
     setup_interrupt_m_vectored(m_mode_table, IE_MTIE | IE_MSIE | IE_MEIE); //
@@ -122,7 +96,7 @@ int main() {
     print("finished delegating traps\n");
     //this is supposed to enter m-mode from s-mode and reach the timer handler supposedly
 
-    enter_s_mode(s_entry);
+    enter_s_mode(s_mode_boot);
     __builtin_unreachable();
     return 0;
 }

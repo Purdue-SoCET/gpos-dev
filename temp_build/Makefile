@@ -1,5 +1,5 @@
 # List of test directories
-TEST_DIRS := kernel  
+TEST_DIRS := user 
 
 # Compiler and tools
 CROSS := riscv64-unknown-elf-
@@ -8,14 +8,14 @@ OBJCOPY := $(CROSS)objcopy
 OBJDUMP := $(CROSS)objdump
 
 # Flags
-CFLAGS := -O2 -I./common -T./common/link.ld \
+CFLAGS := -O2 -I./kernel -T./kernel/link.ld \
 		  -Wall -Wextra -Werror \
 		  -march=rv32imc_zicsr -mabi=ilp32 -mcmodel=medany \
 		  -static -nostartfiles -nostdlib -ffreestanding \
 		  -ffunction-sections -fdata-sections# -Wl,--gc-sections
 
 # Common directory
-COMMON_DIR := common
+COMMON_DIR := kernel
 BUILD_DIR := build
 
 # Find all .c and .S files in common directory
