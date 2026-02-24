@@ -7,8 +7,6 @@
 #define SBI_EXT_TIME 0x54494D45u   // 'TIME' (toy)
 #endif
 
-
-
 #ifndef MCAUSE_INTERRUPT //temp def move to .h after
 #define MCAUSE_INTERRUPT 0x80000000u   // bitmask, bit 31 set means interrupt
 #endif
@@ -198,15 +196,26 @@ void __attribute__((interrupt)) __attribute__((aligned(4))) timer_handler() {
     print("timer handler reached!");
 }
 
-void setup_timer_interrupt(void) {
-
-    register uint32_t a6 asm("a6") = 5; //fid
-    register uint32_t a7 asm("a7") = SBI_EXT_TIME; //ext? 
-
-    // Do the trap into M-mode
-    asm volatile("ecall" :: "r"(a6), "r"(a7) : "memory");
+void ll_write_timer_static(uint32_t l, uint32_t h) {
+    print("writing timer static. l is %d, h is %d", l, h); 
 }
 
+void ll_write_timer_offset(uint32_t l, uint32_t h) {
+    print("writing timer offset. l is %d, h is %d", l, h); 
+}
+
+void sbi_write_timer_static(uint32_t l, uint32_t h) {
+    // a0 and a1 are alr popualted
+    asm volatile (
+        "mv a0, %0\n\t"
+        "mv a1, %1\n\t"
+        "li a6, 1\n\t"
+        "ecall"
+        :
+        : "r"(l), "r"(h)
+        : "a0", "a1", "a6", "memory"
+    );
+}
 
 noreturn void __attribute__((interrupt)) unreachable_handler() {
     exception_context_t ctx;

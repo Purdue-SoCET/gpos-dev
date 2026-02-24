@@ -9,46 +9,40 @@ void user_main();
 extern void m_mode_table(void);
 extern void s_mode_table(void);
 
-// For this test: need to subtract 0xFE from flag to make flag = 1
-// Each handler should be called once. If not, flag will be wrong
-void meip_handler() {
-    flag -= 0xE;
-    *EXT_CLEAR = 0x1; // writing anything simulates clearing interrupt
-    CSRW("mie", 0x088);
-}
-
 void mtip_handler() {
-    flag -= 0xE0;
+    print("Timer interrupt kicked\n");
+    flag = 1;
     *MTIMECMPH = 0xFF; // setting mtimecmph makes a very large value
-}
-
-void msip_handler() {
-    flag -= 0x10;
-    *MSIP = 0x0; // writing 0 clears this
 }
 
 void s_entry(void) {
     print("s_mode entered\n");
-/*
+
     setup_interrupt_s_vectored(s_mode_table, IE_STIE | IE_SSIE | IE_SEIE);
-    setup_timer_interrupt();
-    enable_interrupts_s(); */
+    
+    sbi_write_timer_static(1, 2);
+    enable_interrupts_s();
     enter_u_mode(user_main);
 
     __builtin_unreachable();
 }
 
 //TODO de-facto M-mode handler, refactor later
+
 void __attribute__((interrupt)) __attribute__((aligned(4))) exception_handler() {
     uint32_t mcause = CSRR("mcause");
     if (mcause == EX_ECALL_SMODE) {
-        uint32_t fid, ext;
+        uint32_t fid;
         asm volatile("mv %0, a6" : "=r"(fid));
-        asm volatile("mv %0, a7" : "=r"(ext));
 
         switch (fid) {
             case 1:
-                default_handler();
+                asm volatile (
+                  "call ll_write_timer_static"
+                  :
+                  :
+                  : "ra"
+                );
                 break;
             case 2:
                 default_handler();
@@ -60,7 +54,7 @@ void __attribute__((interrupt)) __attribute__((aligned(4))) exception_handler() 
                 default_handler();
                 break;
             case 5:
-                timer_handler();
+                default_handler();
                 break;
             default:
                 break;
@@ -124,27 +118,11 @@ int main() {
                         "1: csrw mtvec, t0"
                         : : "r" (pmpc), "r" (pmpa) : "t0");       
     enable_interrupts_m();
-    delegate_traps_to_s(0xFFFFFFFFu, 0xFFFFFFFFu); //hard code to delegate all delegable ints to s mode for now
+    delegate_traps_to_s(~(1 << 9), 0xFFFFFFFFu); //hard code to delegate all delegable ints to s mode for now
     print("finished delegating traps\n");
     //this is supposed to enter m-mode from s-mode and reach the timer handler supposedly
 
     enter_s_mode(s_entry);
     __builtin_unreachable();
-    
-    /**MTIMECMPH = 0x00;
-    *MTIMECMP  = 0xFF;
-
-
-    *MSIP = 1;
-    *EXT_SET = 1;
-
-    while(*MTIME < 0xFF);
-
-    if (flag == 1) {
-        test_pass("All vectored interrupts handled");
-    } else {
-        test_fail("Vectored interrupts not handled correctly");
-    } */
-
     return 0;
 }

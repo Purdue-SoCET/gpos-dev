@@ -184,13 +184,17 @@ void enable_interupts_save_s(uint32_t restore);
 uint32_t disable_interrupts_save_s();
 void delegate_traps_to_s(uint32_t medeleg_mask, uint32_t mideleg_mask);
 
-void setup_timer_interrupt(void);
-
 noreturn void enter_s_mode(void (*s_entry)(void));
 noreturn void enter_u_mode(void (*u_entry)(void));
 
 
 bool check_supervisor_mode_available();
 void require_supervisor_mode();
+
+
+void ll_write_timer_static(uint32_t l, uint32_t h) ;
+void ll_write_timer_offset(uint32_t l, uint32_t h) ;
+void sbi_write_timer_static(uint32_t l, uint32_t h) ;
+
 
 #endif
