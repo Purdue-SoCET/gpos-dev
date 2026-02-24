@@ -67,7 +67,7 @@ preinit_arr_calls:
 do_init_arr:
     la s0, __init_array_start
     la s1, __init_array_end
-    beq s0, s1, enter_main 
+    beq s0, s1, kernel_boot 
 
 init_arr_calls:
     lw s2, 0(s0)
@@ -75,8 +75,8 @@ init_arr_calls:
     addi s0, s0, 4
     bne s0, s1, preinit_arr_calls
 
-enter_main:
-    jal main
+kernel_boot:
+    jal m_mode_boot
 
 .global done
 done:

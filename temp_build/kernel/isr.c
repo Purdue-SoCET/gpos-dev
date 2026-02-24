@@ -1,7 +1,8 @@
 #include <stdint.h>
+#include "isr.h"
 #include "csr.h"
 #include "format.h"
-#include "utility.h"
+#include "kernel.h"
 
 void advance_mepc(uint32_t by) {
     uint32_t mepc = CSRR("mepc");
@@ -51,6 +52,41 @@ void enable_interrupts_save_m(uint32_t restore) {
 
 uint32_t disable_interrupts_save_m() {
     return CSRRC("mstatus", MSTATUS_MIE);
+}
+
+//s-mode setup
+void setup_interrupts_s(void *handler_addr, uint32_t sie_value) {
+    uint32_t stvec = (uint32_t)handler_addr;
+    CSRW("stvec", stvec);
+    CSRW("sie", sie_value);
+}
+
+void setup_interrupt_s_vectored(void *table_addr, uint32_t sie_value) {
+    uint32_t stvec = (uint32_t)table_addr | 0x1;
+    CSRW("stvec", stvec);
+    CSRW("sie", sie_value);
+}
+
+void enable_interrupts_s() {
+    CSRS("sstatus", SSTATUS_SIE);
+}
+
+void disable_interrupts_s() {
+    CSRC("sstatus", SSTATUS_SIE);
+}
+
+void enable_interrupts_save_s(uint32_t restore) {
+    CSRW("sstatus", restore);
+}
+
+uint32_t disable_interrupts_save_s() {
+    return CSRRC("sstatus", SSTATUS_SIE);
+}
+
+//enable s-mode delegations
+void delegate_traps_to_s(uint32_t medeleg_mask, uint32_t mideleg_mask) { //not called yet
+    CSRW("medeleg", medeleg_mask);
+    CSRW("mideleg", mideleg_mask);
 }
 
 bool check_supervisor_mode_available() {
@@ -121,12 +157,3 @@ noreturn void __attribute__((interrupt)) unreachable_handler() {
     print("EMERGENCY: THIS HARDWARE CONDITION DOES NOT EXIST AND CAN **NEVER** HAPPEN!\n");
     done();
 }
-
-void exception_handler() __attribute__((weak, alias("default_handler"))) __attribute__((interrupt)) __attribute__((aligned(4)));
-void ssip_handler()      __attribute__((weak, alias("default_handler"))) __attribute__((interrupt)) __attribute__((aligned(4)));
-void msip_handler()      __attribute__((weak, alias("default_handler"))) __attribute__((interrupt)) __attribute__((aligned(4)));
-void stip_handler()      __attribute__((weak, alias("default_handler"))) __attribute__((interrupt)) __attribute__((aligned(4)));
-void mtip_handler()      __attribute__((weak, alias("default_handler"))) __attribute__((interrupt)) __attribute__((aligned(4)));
-void seip_handler()      __attribute__((weak, alias("default_handler"))) __attribute__((interrupt)) __attribute__((aligned(4)));
-void meip_handler()      __attribute__((weak, alias("default_handler"))) __attribute__((interrupt)) __attribute__((aligned(4)));
-void lcofip_handler()    __attribute__((weak, alias("default_handler"))) __attribute__((interrupt)) __attribute__((aligned(4)));
