@@ -8,7 +8,7 @@ OBJCOPY := $(CROSS)objcopy
 OBJDUMP := $(CROSS)objdump
 
 # Flags
-CFLAGS := -O2 -I./kernel -T./kernel/link.ld \
+CFLAGS := -O2 -I./include -T./kernel/link.ld \
 		  -Wall -Wextra -Werror \
 		  -march=rv32imc_zicsr -mabi=ilp32 -mcmodel=medany \
 		  -static -nostartfiles -nostdlib -ffreestanding \
@@ -16,6 +16,7 @@ CFLAGS := -O2 -I./kernel -T./kernel/link.ld \
 
 # Common directory
 COMMON_DIR := kernel
+INCLUDE_DIR := include
 BUILD_DIR := build
 
 # Find all .c and .S files in common directory

@@ -3,16 +3,12 @@
 #include "csr.h"
 #include "format.h"
 #include "utility.h"
+#include "ll_layer.h"
+#include "sbi.h"
 
 extern void main(void);
 extern void m_mode_table(void);
 extern void s_mode_table(void);
-
-void mtip_handler() {
-    print("Timer interrupt kicked\n");
-    flag = 1;
-    *MTIMECMPH = 0xFF; // setting mtimecmph makes a very large value
-}
 
 void s_mode_boot(void) {
     print("s_mode entered\n");

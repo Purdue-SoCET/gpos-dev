@@ -7,10 +7,6 @@
 #define SBI_EXT_TIME 0x54494D45u   // 'TIME' (toy)
 #endif
 
-#ifndef MCAUSE_INTERRUPT //temp def move to .h after
-#define MCAUSE_INTERRUPT 0x80000000u   // bitmask, bit 31 set means interrupt
-#endif
-
 void advance_mepc(uint32_t by) {
     uint32_t mepc = CSRR("mepc");
     mepc += by;
@@ -194,27 +190,6 @@ noreturn void enter_u_mode(void (*u_entry)(void)) {
 
 void __attribute__((interrupt)) __attribute__((aligned(4))) timer_handler() {
     print("timer handler reached!");
-}
-
-void ll_write_timer_static(uint32_t l, uint32_t h) {
-    print("writing timer static. l is %d, h is %d", l, h); 
-}
-
-void ll_write_timer_offset(uint32_t l, uint32_t h) {
-    print("writing timer offset. l is %d, h is %d", l, h); 
-}
-
-void sbi_write_timer_static(uint32_t l, uint32_t h) {
-    // a0 and a1 are alr popualted
-    asm volatile (
-        "mv a0, %0\n\t"
-        "mv a1, %1\n\t"
-        "li a6, 1\n\t"
-        "ecall"
-        :
-        : "r"(l), "r"(h)
-        : "a0", "a1", "a6", "memory"
-    );
 }
 
 noreturn void __attribute__((interrupt)) unreachable_handler() {

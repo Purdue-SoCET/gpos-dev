@@ -26,8 +26,6 @@
 
 extern volatile int flag;
 noreturn void done();
-void test_pass(const char *msg);
-void test_fail(const char *msg);
 static inline void ecall() {
     asm volatile("ecall");
 }
