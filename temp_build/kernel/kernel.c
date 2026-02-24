@@ -22,44 +22,6 @@ void s_mode_boot(void) {
     __builtin_unreachable();
 }
 
-//TODO de-facto M-mode handler, refactor later
-
-void __attribute__((interrupt)) __attribute__((aligned(4))) exception_handler() {
-    uint32_t mcause = CSRR("mcause");
-    if (mcause == EX_ECALL_SMODE) {
-        uint32_t fid;
-        asm volatile("mv %0, a6" : "=r"(fid));
-
-        switch (fid) {
-            case 1:
-                asm volatile (
-                  "call ll_write_timer_static"
-                  :
-                  :
-                  : "ra"
-                );
-                break;
-            case 2:
-                default_handler();
-                break;
-            case 3:
-                default_handler();
-                break;
-            case 4:
-                default_handler();
-                break;
-            case 5:
-                default_handler();
-                break;
-            default:
-                break;
-        }
-        advance_mepc(4);
-        return;
-    }
-    default_handler();
-}
-
 #define PMP_R     0x01
 #define PMP_W     0x02
 #define PMP_X     0x04

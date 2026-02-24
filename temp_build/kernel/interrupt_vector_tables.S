@@ -1,8 +1,8 @@
-
-.align 4
 .global vector_table
 .global m_mode_table
 .global s_mode_table
+
+.align 4
 .option push
 .option norvc
 vector_table:
@@ -32,7 +32,7 @@ vector_table:
 .option push
 .option norvc
 m_mode_table:
-    j exception_handler     // exceptions jump to cause 0
+    j m_mode_exception_handler     // exceptions jump to cause 0
     j unreachable_handler          // 1
     j unreachable_handler   // 2
     j msip_handler          // 3
