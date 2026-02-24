@@ -2,7 +2,7 @@
 #include "isr.h"
 #include "csr.h"
 #include "format.h"
-#include "utility.h"
+#include "kernel.h"
 
 void advance_mepc(uint32_t by) {
     uint32_t mepc = CSRR("mepc");

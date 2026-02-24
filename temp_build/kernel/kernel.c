@@ -3,24 +3,9 @@
 #include "csr.h"
 #include "isr.h"
 #include "format.h"
-#include "utility.h"
 #include "ll_layer.h"
 #include "sbi.h"
-
-#define PMP_R     0x01
-#define PMP_W     0x02
-#define PMP_X     0x04
-#define PMP_A     0x18
-#define PMP_L     0x80
-#define PMP_SHIFT 2
-
-#define PMP_TOR   0x08
-#define PMP_NA4   0x10
-#define PMP_NAPOT 0x18
-
-extern void main(void);
-extern void m_mode_table(void);
-extern void s_mode_table(void);
+#include "kernel.h"
 
 noreturn void enter_s_mode(void (*s_entry)(void)) { //s_mode
     // mpp should be 1 to dictate a "return" to s-mode; write to this

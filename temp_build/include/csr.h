@@ -1,5 +1,5 @@
-#ifndef _CSR_MACROS_H_
-#define _CSR_MACROS_H_
+#ifndef _CSR_H_
+#define _CSR_H_
 
 typedef enum {
     EX_MAL_INSN     = 0,
