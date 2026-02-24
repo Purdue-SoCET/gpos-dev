@@ -1,10 +1,5 @@
-#ifndef _CSR_H_
-#define _CSR_H_
-
-#include "csr_macros.h"
-#include <stdint.h>
-#include <stdbool.h>
-#include <stdnoreturn.h>
+#ifndef _CSR_MACROS_H_
+#define _CSR_MACROS_H_
 
 typedef enum {
     EX_MAL_INSN     = 0,
@@ -65,68 +60,73 @@ typedef enum {
     SSTATUS_SPP = (0b1 << 8)
 } sstatus_fields_t;
 
-typedef struct {
-    uint32_t epc;
-    uint32_t tval;
-    uint32_t cause;
-    uint32_t cycle;
-    uint32_t time;
-    uint32_t icache_misses;
-    uint32_t dcache_misses;
-} exception_context_t;
 
-// Interrupt functions
-extern uint32_t vector_table[] __attribute__((aligned(256)));
-void default_handler()   __attribute__((interrupt)) __attribute__((aligned(4)));
-void exception_handler() __attribute__((interrupt)) __attribute__((aligned(4)));
-void ssip_handler()      __attribute__((interrupt)) __attribute__((aligned(4)));
-void msip_handler()      __attribute__((interrupt)) __attribute__((aligned(4)));
-void stip_handler()      __attribute__((interrupt)) __attribute__((aligned(4)));
-void mtip_handler()      __attribute__((interrupt)) __attribute__((aligned(4)));
-void seip_handler()      __attribute__((interrupt)) __attribute__((aligned(4)));
-void meip_handler()      __attribute__((interrupt)) __attribute__((aligned(4)));
-void lcofip_handler()    __attribute__((interrupt)) __attribute__((aligned(4)));
-void timer_handler()    __attribute__((interrupt)) __attribute__((aligned(4)));
-noreturn void unreachable_handler();
-noreturn void enter_s_mode(void (*s_entry)(void));
-noreturn void enter_u_mode(void (*u_entry)(void));
+// Read CSR
+#define CSRR(csr) ({ \
+    uint32_t __value; \
+    __asm__ volatile("csrr %0, " csr : "=r"(__value)); \
+    __value; \
+})
 
-void read_exception_context(exception_context_t *);
-void read_exception_context_s(exception_context_t*);
-void print_exception_context(exception_context_t *);
+// Write CSR
+#define CSRW(csr, val) \
+    __asm__ volatile("csrw " csr ", %0" : : "r"(val))
 
-void advance_mepc(uint32_t by);
-void set_mepc(void *address);
-void advance_sepc(uint32_t by);
-void set_sepc(void *address);
-void setup_interrupts_m(void *handler_addr, uint32_t mie_value);
-void setup_interrupt_m_vectored(void *table_addr, uint32_t mie_value);
+// Read and Write CSR (atomic swap)
+#define CSRRW(csr, val) ({ \
+    uint32_t __value; \
+    __asm__ volatile("csrrw %0, " csr ", %1" : "=r"(__value) : "r"(val)); \
+    __value; \
+})
 
-void enable_interrupts_m();
-void disable_interrupts_m();
-void enable_interrupts_save_m(uint32_t restore);
-uint32_t disable_interrupts_save_m();
+// Set bits in CSR
+#define CSRS(csr, val) \
+    __asm__ volatile("csrs " csr ", %0" : : "r"(val))
 
-void setup_interrupts_s(void *handler_addr, uint32_t sie_value);
-void setup_interrupt_s_vectored(void *table_addr, uint32_t sie_value);
+// Read and Set bits in CSR
+#define CSRRS(csr, val) ({ \
+    uint32_t __value; \
+    __asm__ volatile("csrrs %0, " csr ", %1" : "=r"(__value) : "r"(val)); \
+    __value; \
+})
 
-void enable_interrupts_s();
-void disable_interrupts_s();
-void enable_interupts_save_s(uint32_t restore);
-uint32_t disable_interrupts_save_s();
-void delegate_traps_to_s(uint32_t medeleg_mask, uint32_t mideleg_mask);
+// Clear bits in CSR
+#define CSRC(csr, val) \
+    __asm__ volatile("csrc " csr ", %0" : : "r"(val))
 
-noreturn void enter_s_mode(void (*s_entry)(void));
-noreturn void enter_u_mode(void (*u_entry)(void));
+// Read and Clear bits in CSR
+#define CSRRC(csr, val) ({ \
+    uint32_t __value; \
+    __asm__ volatile("csrrc %0, " csr ", %1" : "=r"(__value) : "r"(val)); \
+    __value; \
+})
 
+// Immediate variants (for 5-bit unsigned immediates)
+#define CSRWI(csr, imm) \
+    __asm__ volatile("csrwi " csr ", %0" : : "i"(imm))
 
-bool check_supervisor_mode_available();
-void require_supervisor_mode();
+#define CSRSI(csr, imm) \
+    __asm__ volatile("csrsi " csr ", %0" : : "i"(imm))
 
+#define CSRCI(csr, imm) \
+    __asm__ volatile("csrci " csr ", %0" : : "i"(imm))
 
-void ll_write_timer_static(uint32_t l, uint32_t h) ;
-void ll_write_timer_offset(uint32_t l, uint32_t h) ;
-void sbi_write_timer_static(uint32_t l, uint32_t h) ;
+#define CSRRWI(csr, imm) ({ \
+    uint32_t __value; \
+    __asm__ volatile("csrrwi %0, " csr ", %1" : "=r"(__value) : "i"(imm)); \
+    __value; \
+})
 
+#define CSRRSI(csr, imm) ({ \
+    uint32_t __value; \
+    __asm__ volatile("csrrsi %0, " csr ", %1" : "=r"(__value) : "i"(imm)); \
+    __value; \
+})
+
+#define CSRRCI(csr, imm) ({ \
+    uint32_t __value; \
+    __asm__ volatile("csrrci %0, " csr ", %1" : "=r"(__value) : "i"(imm)); \
+    __value; \
+})
 
 #endif

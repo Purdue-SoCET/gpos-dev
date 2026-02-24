@@ -1,11 +1,8 @@
 #include <stdint.h>
+#include "isr.h"
 #include "csr.h"
 #include "format.h"
 #include "utility.h"
-
-#ifndef SBI_EXT_TIME
-#define SBI_EXT_TIME 0x54494D45u   // 'TIME' (toy)
-#endif
 
 void advance_mepc(uint32_t by) {
     uint32_t mepc = CSRR("mepc");
@@ -92,7 +89,6 @@ void delegate_traps_to_s(uint32_t medeleg_mask, uint32_t mideleg_mask) { //not c
     CSRW("mideleg", mideleg_mask);
 }
 
-
 bool check_supervisor_mode_available() {
     // check to see if s-mode is enabled
     // easiest way is to set mstatus.mpp to S-mode and
@@ -113,8 +109,6 @@ void require_supervisor_mode() {
         __builtin_unreachable();
     }
 }
-
-
 
 void read_exception_context(exception_context_t *ctx) {
     ctx->cycle  = CSRR("cycle");
@@ -156,42 +150,6 @@ void __attribute__((interrupt)) default_handler() {
     done();
 }
 
-//static uint8_t s_stack[4096] __attribute__((aligned(16)));
-
-
-noreturn void enter_s_mode(void (*s_entry)(void)) { //s_mode 
-    // mpp should be 1 to dictate a "return" to s-mode; write to this
-    CSRC("mstatus", (3 << 11)); // MPP is bits 11 and 12; clear these
-    CSRS("mstatus", (1 << 11)); // previous supervisor mode is 01; set these
-    print("MPP cleared and artifically set to supervisor\n");
-
-    CSRW("mepc", (uint32_t)s_entry);
-    // set where we land in S-mode
-    //set_mepc((void*)s_entry);
-    print("mepc set\n");
-
-    // seturn from trap into S-mode EXECUTION HANGS HERE
-    asm volatile("mret");
-    __builtin_unreachable();
-}
-
-noreturn void enter_u_mode(void (*u_entry)(void)) {
-    // ensure sret returns to U-mode (SPP=0)
-    CSRC("sstatus", (1 << 8)); // spp is (1 << 8)
-    print("SPP cleared and artifically set to supervisor\n");
-
-    // Set user entry PC
-    CSRW("sepc", (uint32_t)u_entry);
-
-    asm volatile("sret");
-    __builtin_unreachable();
-}
-
-
-void __attribute__((interrupt)) __attribute__((aligned(4))) timer_handler() {
-    print("timer handler reached!");
-}
-
 noreturn void __attribute__((interrupt)) unreachable_handler() {
     exception_context_t ctx;
     read_exception_context(&ctx);
@@ -199,12 +157,3 @@ noreturn void __attribute__((interrupt)) unreachable_handler() {
     print("EMERGENCY: THIS HARDWARE CONDITION DOES NOT EXIST AND CAN **NEVER** HAPPEN!\n");
     done();
 }
-
-void exception_handler() __attribute__((weak, alias("default_handler"))) __attribute__((interrupt)) __attribute__((aligned(4)));
-void ssip_handler()      __attribute__((weak, alias("default_handler"))) __attribute__((interrupt)) __attribute__((aligned(4)));
-void msip_handler()      __attribute__((weak, alias("default_handler"))) __attribute__((interrupt)) __attribute__((aligned(4)));
-void stip_handler()      __attribute__((weak, alias("default_handler"))) __attribute__((interrupt)) __attribute__((aligned(4)));
-void mtip_handler()      __attribute__((weak, alias("default_handler"))) __attribute__((interrupt)) __attribute__((aligned(4)));
-void seip_handler()      __attribute__((weak, alias("default_handler"))) __attribute__((interrupt)) __attribute__((aligned(4)));
-void meip_handler()      __attribute__((weak, alias("default_handler"))) __attribute__((interrupt)) __attribute__((aligned(4)));
-void lcofip_handler()    __attribute__((weak, alias("default_handler"))) __attribute__((interrupt)) __attribute__((aligned(4)));
