@@ -1,6 +1,7 @@
 
 #include <stdint.h>
-#include "../../env/csr.h"
+#include "csr.h"
+#include "format.h"
 #include "utility.h"
 
 void user_main();
@@ -28,14 +29,14 @@ void msip_handler() {
 
 void s_entry(void) {
     setup_interrupt_s_vectored(s_mode_table, IE_STIE | IE_SSIE | IE_SEIE);
-    enable_interrupts_s();
     setup_timer_interrupt();
+    enable_interrupts_s();
     enter_u_mode(user_main);
 
     __builtin_unreachable();
 }
 
-
+//TODO de-facto M-mode handler, refactor later
 void __attribute__((interrupt)) __attribute__((aligned(4))) exception_handler() {
     uint32_t mcause = CSRR("mcause");
     if (mcause == EX_ECALL_SMODE) {
@@ -68,6 +69,8 @@ void __attribute__((interrupt)) __attribute__((aligned(4))) exception_handler() 
     default_handler();
 }
 
+
+
 void user_main() {
     *MTIMECMPH = 0x00;
     *MTIMECMP  = 0xFF;
@@ -89,16 +92,44 @@ void user_main() {
     } */
 
 }
+#define PMP_R     0x01
+#define PMP_W     0x02
+#define PMP_X     0x04
+#define PMP_A     0x18
+#define PMP_L     0x80
+#define PMP_SHIFT 2
+
+#define PMP_TOR   0x08
+#define PMP_NA4   0x10
+#define PMP_NAPOT 0x18
 
 int main() {
     
     //kernel boot stuff later will get separated into kernel main or whatever
     setup_interrupt_m_vectored(m_mode_table, IE_MTIE | IE_MSIE | IE_MEIE); //
+    print("m_mode table setup complete\n");
+    //CSRW("pmpaddr0", 0xFFFFFFFFu); // Top of range
+    //CSRW("pmpcfg0", 0xF);          // NAPOT range (if supported) or simple TOR (0x8F)
+    uintptr_t pmpc = PMP_NAPOT | PMP_R | PMP_W | PMP_X;
+    uintptr_t pmpa = ((uintptr_t)1 << (__riscv_xlen == 32 ? 31 : 53)) - 1;
+    asm volatile ("la t0, 1f\n\t"
+                        "csrrw t0, mtvec, t0\n\t"
+                        "csrw pmpaddr0, %1\n\t"
+                        "csrw pmpcfg0, %0\n\t"
+                        ".align 2\n\t"
+                        "1: csrw mtvec, t0"
+                        : : "r" (pmpc), "r" (pmpa) : "t0");       
     enable_interrupts_m();
     delegate_traps_to_s(0xFFFFFFFFu, 0xFFFFFFFFu); //hard code to delegate all delegable ints to s mode for now
+    print("finished delegating traps\n");
+    //this is supposed to enter m-mode from s-mode and reach the timer handler supposedly
+
+    //TIMES OUT HERE
     enter_s_mode(s_entry);
+    print("s_mode entered\n");
     
     enter_u_mode(user_main);
+    print("u_mode entered\n");
     
     /**MTIMECMPH = 0x00;
     *MTIMECMP  = 0xFF;

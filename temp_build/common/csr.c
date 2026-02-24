@@ -7,9 +7,6 @@
 #define SBI_EXT_TIME 0x54494D45u   // 'TIME' (toy)
 #endif
 
-#ifndef SBI_FID_SET_TIMER
-#define SBI_FID_SET_TIMER 5u       // arbitrary 
-#endif
 
 
 #ifndef MCAUSE_INTERRUPT //temp def move to .h after
@@ -165,6 +162,9 @@ void __attribute__((interrupt)) default_handler() {
     done();
 }
 
+//static uint8_t s_stack[4096] __attribute__((aligned(16)));
+
+
 noreturn void enter_s_mode(void (*s_entry)(void)) { //s_mode 
     // Set next privilege to S-mode: mstatus.MPP = 01
     uint32_t mstatus = CSRR("mstatus");
@@ -172,11 +172,18 @@ noreturn void enter_s_mode(void (*s_entry)(void)) { //s_mode
     mstatus |= (0b01u << 11); //put 01 for s-mode into bits 12:11 of mstatus
     CSRW("mstatus", mstatus);
 
-    // set where we land in S-mode
-    set_mepc((void*)s_entry);
+    uint32_t x;
+    asm volatile ("csrr %0, mstatus" : "=r"(x));
+    print("MPP cleared, read from mstatus");
 
-    // seturn from trap into S-mode
+    CSRW("mepc", (uint32_t)s_entry);
+    // set where we land in S-mode
+    //set_mepc((void*)s_entry);
+    print("mepc set\n");
+
+    // seturn from trap into S-mode EXECUTION HANGS HERE
     asm volatile("mret");
+    print("mret triggered, S-mode entered");
     __builtin_unreachable();
 }
 
@@ -191,18 +198,14 @@ noreturn void enter_u_mode(void (*u_entry)(void)) {
     __builtin_unreachable();
 }
 
-//TODO: Implement exception handler (moved to vectored.c), with timer interrupt being called with 5 for example.
-
 
 void __attribute__((interrupt)) __attribute__((aligned(4))) timer_handler() {
     print("timer handler reached!");
 }
 
-//TODO: Implement m mode handler??
-
 void setup_timer_interrupt(void) {
 
-    register uint32_t a6 asm("a6") = SBI_FID_SET_TIMER; //fid
+    register uint32_t a6 asm("a6") = 5; //fid
     register uint32_t a7 asm("a7") = SBI_EXT_TIME; //ext? 
 
     // Do the trap into M-mode
