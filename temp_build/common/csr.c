@@ -166,15 +166,10 @@ void __attribute__((interrupt)) default_handler() {
 
 
 noreturn void enter_s_mode(void (*s_entry)(void)) { //s_mode 
-    // Set next privilege to S-mode: mstatus.MPP = 01
-    uint32_t mstatus = CSRR("mstatus");
-    mstatus &= ~MSTATUS_MPP; //clear MPP
-    mstatus |= (0b01u << 11); //put 01 for s-mode into bits 12:11 of mstatus
-    CSRW("mstatus", mstatus);
-
-    uint32_t x;
-    asm volatile ("csrr %0, mstatus" : "=r"(x));
-    print("MPP cleared, read from mstatus");
+    // mpp should be 1 to dictate a "return" to s-mode; write to this
+    CSRC("mstatus", (3 << 11)); // MPP is bits 11 and 12; clear these
+    CSRS("mstatus", (1 << 11)); // previous supervisor mode is 01; set these
+    print("MPP cleared and artifically set to supervisor\n");
 
     CSRW("mepc", (uint32_t)s_entry);
     // set where we land in S-mode
@@ -183,16 +178,16 @@ noreturn void enter_s_mode(void (*s_entry)(void)) { //s_mode
 
     // seturn from trap into S-mode EXECUTION HANGS HERE
     asm volatile("mret");
-    print("mret triggered, S-mode entered");
     __builtin_unreachable();
 }
 
 noreturn void enter_u_mode(void (*u_entry)(void)) {
-    // Set user entry PC
-    set_sepc((void*)u_entry);
-
     // ensure sret returns to U-mode (SPP=0)
-    CSRC("sstatus", SSTATUS_SPP);
+    CSRC("sstatus", (1 << 8)); // spp is (1 << 8)
+    print("SPP cleared and artifically set to supervisor\n");
+
+    // Set user entry PC
+    CSRW("sepc", (uint32_t)u_entry);
 
     asm volatile("sret");
     __builtin_unreachable();

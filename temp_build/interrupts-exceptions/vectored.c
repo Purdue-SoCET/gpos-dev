@@ -28,9 +28,11 @@ void msip_handler() {
 }
 
 void s_entry(void) {
+    print("s_mode entered\n");
+/*
     setup_interrupt_s_vectored(s_mode_table, IE_STIE | IE_SSIE | IE_SEIE);
     setup_timer_interrupt();
-    enable_interrupts_s();
+    enable_interrupts_s(); */
     enter_u_mode(user_main);
 
     __builtin_unreachable();
@@ -72,6 +74,8 @@ void __attribute__((interrupt)) __attribute__((aligned(4))) exception_handler() 
 
 
 void user_main() {
+    print("u_mode entered\n");
+
     *MTIMECMPH = 0x00;
     *MTIMECMP  = 0xFF;
 
@@ -124,12 +128,8 @@ int main() {
     print("finished delegating traps\n");
     //this is supposed to enter m-mode from s-mode and reach the timer handler supposedly
 
-    //TIMES OUT HERE
     enter_s_mode(s_entry);
-    print("s_mode entered\n");
-    
-    enter_u_mode(user_main);
-    print("u_mode entered\n");
+    __builtin_unreachable();
     
     /**MTIMECMPH = 0x00;
     *MTIMECMP  = 0xFF;
