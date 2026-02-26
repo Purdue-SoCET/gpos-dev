@@ -18,8 +18,6 @@
 extern void main(void);
 extern void m_mode_table(void);
 extern void s_mode_table(void);
-noreturn void enter_s_mode(void (*)(void));
-noreturn void enter_u_mode(void (*)(void));
 noreturn void done();
 extern volatile int flag;
 
