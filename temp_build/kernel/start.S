@@ -76,7 +76,29 @@ init_arr_calls:
     bne s0, s1, preinit_arr_calls
 
 kernel_boot:
-    jal m_mode_boot
+start_m_mode_boot:
+    call m_mode_boot
+
+start_s_mode_boot:
+    # switch to s-mode
+    li    t0, (3 << 11)  # clear mstatus.mpp
+    csrc  mstatus, t0
+    li    t0, (1 << 11)  # set mstatus.mpp to be s
+    csrs  mstatus, t0
+
+    la    ra, start_main     # execute u-mode boot on ret
+    la    t0, s_mode_boot    # jump to s_mode_boot
+    csrw  mepc, t0
+    mret
+
+start_main:
+    # switch to u-mode
+    li    t0, (1 << 8)  #spp is (1 << 8)
+    csrc  sstatus, t0
+    
+    la    t0, main
+    csrw  sepc, t0
+    sret
 
 .global done
 done:
