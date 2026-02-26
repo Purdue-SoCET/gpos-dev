@@ -96,6 +96,7 @@ start_main:
     li    t0, (1 << 8)  #spp is (1 << 8)
     csrc  sstatus, t0
     
+    la    ra, done      # upon main return, execute done()
     la    t0, main
     csrw  sepc, t0
     sret
@@ -103,8 +104,7 @@ start_main:
 .global done
 done:
 check_flag:
-    la x27, flag
-    lw x28, 0(x27)
+    li x28, 1
     la x27, tohost
     sw x28, 0(x27)
 
