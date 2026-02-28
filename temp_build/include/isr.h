@@ -39,6 +39,7 @@ void setup_interrupts_s(void *handler_addr, uint32_t sie_value);
 void setup_interrupt_s_vectored(void *table_addr, uint32_t sie_value);
 
 void enable_interrupts_s();
+void enable_prev_interrupts_s();
 void disable_interrupts_s();
 void enable_interupts_save_s(uint32_t restore);
 uint32_t disable_interrupts_save_s();

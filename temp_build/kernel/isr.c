@@ -5,15 +5,16 @@
 #include "sbi.h"
 #include "kernel.h"
 
-void clk_handler() {
+__attribute__((interrupt("supervisor"))) __attribute__((aligned(4)))
+void  clk_handler() {
     print("handling clock increment"); 
     time_remaining -= 1;
     if (time_remaining <= 0) {	    
     	reschedule_function();
     }
 
-    sbi_write_timer_offset(1000, 0);
-    print("Handled. "); 
+    sbi_write_timer_offset((uint32_t) CLK_TICK, (uint32_t)(CLK_TICK >> 32));
+    print("Handled. ");
 }
 
 void advance_mepc(uint32_t by) {
@@ -77,6 +78,10 @@ void setup_interrupt_s_vectored(void *table_addr, uint32_t sie_value) {
     uint32_t stvec = (uint32_t)table_addr | 0x1;
     CSRW("stvec", stvec);
     CSRW("sie", sie_value);
+}
+
+void enable_prev_interrupts_s() {
+    CSRS("sstatus", SSTATUS_SPIE);
 }
 
 void enable_interrupts_s() {
@@ -153,19 +158,21 @@ void print_exception_context(exception_context_t *ctx) {
     print("D$ miss : %d\n", ctx->dcache_misses);
 }
 
-void __attribute__((interrupt)) default_handler() {
+noreturn void __attribute__((interrupt)) __attribute__((aligned(4))) default_handler() {
     exception_context_t ctx;
     read_exception_context(&ctx);
     print_exception_context(&ctx);
 
     print("Unexpected exception/interrupt; exiting\n");
     done();
+    __builtin_unreachable();
 }
 
-noreturn void __attribute__((interrupt)) unreachable_handler() {
+noreturn void __attribute__((interrupt)) __attribute__((aligned(4))) unreachable_handler() {
     exception_context_t ctx;
     read_exception_context(&ctx);
     print_exception_context(&ctx);
     print("EMERGENCY: THIS HARDWARE CONDITION DOES NOT EXIST AND CAN **NEVER** HAPPEN!\n");
     done();
+    __builtin_unreachable();
 }

@@ -20,10 +20,12 @@ void reschedule_function() {
 void s_mode_boot(void) {
     print("s_mode entered\n");
 
-    setup_interrupt_s_vectored(s_mode_table, IE_STIE | IE_SSIE | IE_SEIE);
-    
-    sbi_write_timer_static(1, 2);
+    setup_interrupt_s_vectored(s_mode_table, IE_STIE);
     enable_interrupts_s();
+    enable_prev_interrupts_s(); // so interrupts enabled in u-mode
+
+    // set up recurrint clock handler
+    sbi_write_timer_offset((uint32_t) CLK_TICK * 2, 0);
     return;
 }
 
