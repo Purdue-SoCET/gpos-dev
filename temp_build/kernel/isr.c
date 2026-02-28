@@ -2,7 +2,19 @@
 #include "isr.h"
 #include "csr.h"
 #include "format.h"
+#include "sbi.h"
 #include "kernel.h"
+
+void clk_handler() {
+    print("handling clock increment"); 
+    time_remaining -= 1;
+    if (time_remaining <= 0) {	    
+    	reschedule_function();
+    }
+
+    sbi_write_timer_offset(1000, 0);
+    print("Handled. "); 
+}
 
 void advance_mepc(uint32_t by) {
     uint32_t mepc = CSRR("mepc");

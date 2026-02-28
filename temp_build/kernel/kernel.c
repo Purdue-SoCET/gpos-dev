@@ -7,6 +7,16 @@
 #include "sbi.h"
 #include "kernel.h"
 
+int queue[5] = {1, 2, 3, 4, 5};
+int index = 0;
+volatile uint64_t time_remaining = QUANTUM;
+
+void reschedule_function() {
+    index++;
+    time_remaining = QUANTUM;
+    print("Index increments. Index at %d. ", index);
+}
+
 void s_mode_boot(void) {
     print("s_mode entered\n");
 
