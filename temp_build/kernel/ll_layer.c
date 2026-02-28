@@ -36,4 +36,6 @@ void ll_write_timer_offset(uint32_t l, uint32_t h) {
     *MTIMECMPH = 0xFFFFFFFF;
     *MTIMECMP  = (uint32_t)(new_time);
     *MTIMECMPH = (uint32_t)(new_time >> 32);
+
+    // print("time is currently %d. new time is %d\n", *(uint64_t*)(MTIME), new_time);
 }

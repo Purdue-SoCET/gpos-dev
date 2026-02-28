@@ -18,12 +18,14 @@
 extern void main(void);
 extern void m_mode_table(void);
 extern void s_mode_table(void);
-noreturn void done();
+extern void done(void);
 extern volatile int flag;
 
 void reschedule_function(void);
 
-#define QUANTUM 2;
+#define QUANTUM (2)
+#define CLK_TICK ((uint64_t) 1000)
+
 extern int queue[5];
 extern int index ;
 extern uint64_t volatile time_remaining;
