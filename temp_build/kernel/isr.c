@@ -4,6 +4,31 @@
 #include "format.h"
 #include "kernel.h"
 
+#define QUANTUM 2;
+int queue[5] = {1, 2, 3, 4, 5};
+int index = 0;
+uint64_t volatile time_remaining = QUANTUM;
+
+void mtip_handler() {
+    print("mtip handling...."); 
+    time_remaining -= 1;
+    if (time_remaining <= 0) {	    
+    	reschedule_function();
+    }
+    set_timer(1000);
+    print("Handled. "); 
+}
+
+void reschedule_function() {
+    index++;
+    time_remaining = QUANTUM;
+    print("Index increments. Index at %d. ", index);
+}
+
+void set_timer(uint64_t value) {
+    *MTIMECMP = *MTIME + value;
+}
+
 void advance_mepc(uint32_t by) {
     uint32_t mepc = CSRR("mepc");
     mepc += by;

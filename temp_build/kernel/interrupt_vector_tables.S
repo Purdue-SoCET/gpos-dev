@@ -37,7 +37,7 @@ s_mode_table:
     j unreachable_handler        // 3
 
     j unreachable_handler   // 4 
-    j unreachable_handler          // 5
+    j stip_handler          // 5
     j unreachable_handler   // 6
     j unreachable_handler          // 7
 

@@ -1,3 +1,5 @@
+#include "sbi.h"
+
 .align 4
 .option push
 .option norvc
@@ -30,13 +32,14 @@ sbi_ll_exception_handler:
   sw a7, 24(sp)
 
 sbi_case_1:
-  li t1, 1
+  li t1, SBI_W_TIMER_STATIC
   bne a6, t1, sbi_case_2
   call ll_write_timer_static
   j sbi_handler_end
 
 sbi_case_2:
-  # empty
+  li t1, BI_W_TIMER_OFFSET
+  call ll_write_timer_offset
 
 sbi_handler_end:
   # advance mepc 
