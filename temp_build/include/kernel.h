@@ -21,5 +21,11 @@ extern void s_mode_table(void);
 noreturn void done();
 extern volatile int flag;
 
+void reschedule_function(void);
+
+#define QUANTUM 2;
+extern int queue[5];
+extern int index ;
+extern uint64_t volatile time_remaining;
 
 #endif

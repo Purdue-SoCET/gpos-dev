@@ -1,4 +1,4 @@
-#include "sbi.h"
+#include "sbi_macros.h"
 
 .align 4
 .option push
@@ -38,8 +38,14 @@ sbi_case_1:
   j sbi_handler_end
 
 sbi_case_2:
-  li t1, BI_W_TIMER_OFFSET
+  li t1, SBI_W_TIMER_OFFSET
+  bne a6, t1, sbi_case_3
   call ll_write_timer_offset
+  j sbi_handler_end
+
+sbi_case_3:
+  /* no op */
+  j sbi_handler_end
 
 sbi_handler_end:
   # advance mepc 

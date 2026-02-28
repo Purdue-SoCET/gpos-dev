@@ -32,24 +32,24 @@ m_mode_table:
 .option norvc
 s_mode_table:
     j unreachable_handler     // exceptions jump to cause 0
-    j unreachable_handler          // 1
-    j unreachable_handler   // 2
-    j unreachable_handler        // 3
+    j default_handler          // 1
+    j default_handler   // 2
+    j default_handler        // 3
 
-    j unreachable_handler   // 4 
-    j stip_handler          // 5
-    j unreachable_handler   // 6
-    j unreachable_handler          // 7
+    j default_handler   // 4 
+    j clk_handler          // 5
+    j default_handler   // 6
+    j default_handler          // 7
 
-    j unreachable_handler   // 8
-    j unreachable_handler          // 9
-    j unreachable_handler   // 10
-    j unreachable_handler          // 11
+    j default_handler   // 8
+    j default_handler          // 9
+    j default_handler   // 10
+    j default_handler          // 11
 
-    j unreachable_handler   // 12
-    j unreachable_handler        // 13
-    j unreachable_handler   // 14
-    j unreachable_handler   // 15
+    j default_handler   // 12
+    j default_handler        // 13
+    j default_handler   // 14
+    j default_handler   // 15
     // end of standard interrupts
 .option pop
 
