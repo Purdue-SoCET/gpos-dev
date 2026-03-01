@@ -5,6 +5,7 @@
 #include "format.h"
 #include "sbi.h"
 #include "kernel.h"
+#include "vm.h"
 
 int queue[5] = {1, 2, 3, 4, 5};
 int index = 0;
