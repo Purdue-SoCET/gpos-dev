@@ -3,7 +3,6 @@
 #ifndef __KERNEL_H__
 #define __KERNEL_H__
 
-
 #define PMP_R     0x01
 #define PMP_W     0x02
 #define PMP_X     0x04
@@ -23,8 +22,13 @@ extern volatile int flag;
 
 void reschedule_function(void);
 
-#define QUANTUM (2)
-#define CLK_TICK ((uint64_t) 1000)
+#define QUANTUM (8)
+#define CLK_TICK ((uint64_t) 50)
+
+/* TODO: this is the time the kernel waits to fire
+ * the first clock interrupt so it has time to jump to
+ * u-mode. Stop hard-coding this. */
+#define WAIT_INIT ((uint64_t) 2000) 
 
 extern int queue[5];
 extern int index ;
