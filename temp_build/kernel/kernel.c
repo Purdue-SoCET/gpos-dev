@@ -3,7 +3,6 @@
 #include "csr.h"
 #include "isr.h"
 #include "format.h"
-#include "ll_layer.h"
 #include "sbi.h"
 #include "kernel.h"
 
@@ -14,7 +13,7 @@ volatile uint64_t time_remaining = QUANTUM;
 void reschedule_function() {
     index++;
     time_remaining = QUANTUM;
-    print("Index increments. Index at %d. ", index);
+    print("Index increments. Index at %d\n", index);
 }
 
 void s_mode_boot(void) {
@@ -25,12 +24,11 @@ void s_mode_boot(void) {
     enable_prev_interrupts_s(); // so interrupts enabled in u-mode
 
     // set up recurrint clock handler
-    sbi_write_timer_offset((uint32_t) CLK_TICK * 2, 0);
+    sbi_write_timer_offset((uint32_t) WAIT_INIT, (uint32_t)(WAIT_INIT >> 32));
     return;
 }
 
-void m_mode_boot() {
-    
+void m_mode_boot() { 
     //kernel boot stuff later will get separated into kernel main or whatever
     setup_interrupt_m_vectored(m_mode_table, IE_MTIE | IE_MSIE | IE_MEIE); //
     print("m_mode table setup complete\n");
@@ -45,7 +43,7 @@ void m_mode_boot() {
                         "1: csrw mtvec, t0"
                         : : "r" (pmpc), "r" (pmpa) : "t0");       
     enable_interrupts_m();
-    delegate_traps_to_s(~(1 << 9), 0xFFFFFFFFu); //hard code to delegate all delegable ints to s mode for now
+    delegate_traps_to_s(~(1 << EX_ECALL_SMODE), 0xFFFFFFFFu); //hard code to delegate all delegable ints to s mode for now
     print("finished delegating traps\n");
     //this is supposed to enter m-mode from s-mode and reach the timer handler supposedly
     return;
