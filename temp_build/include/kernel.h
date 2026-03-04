@@ -22,7 +22,7 @@ extern volatile int flag;
 
 void reschedule_function(void);
 
-#define QUANTUM (10)
+#define QUANTUM (8)
 #define CLK_TICK ((uint64_t) 50)
 
 /* TODO: this is the time the kernel waits to fire
