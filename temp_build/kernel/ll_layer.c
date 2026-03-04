@@ -10,15 +10,15 @@
  */
 
 void ll_write_timer_static(uint32_t l, uint32_t h) {
-    print("writing timer static. l is %d, h is %d\n", l, h); 
     *MTIMECMPH = 0xFFFFFFFF;
     *MTIMECMP = l;
     *MTIMECMPH = h;
+
+    // manually clear software timer interrupt pending
+    CSRRC("mip", MSTATUS_SPIE);
 }
 
 void ll_write_timer_offset(uint32_t l, uint32_t h) {
-    print("writing timer offset. l is %d, h is %d\n", l, h);
-
     uint32_t mtime_h, mtime_l;
 
     // pseudo-atomic read 
@@ -37,5 +37,6 @@ void ll_write_timer_offset(uint32_t l, uint32_t h) {
     *MTIMECMP  = (uint32_t)(new_time);
     *MTIMECMPH = (uint32_t)(new_time >> 32);
 
-    // print("time is currently %d. new time is %d\n", *(uint64_t*)(MTIME), new_time);
+    // manually clear software timer interrupt pending
+    CSRRC("mip", MSTATUS_SPIE);
 }

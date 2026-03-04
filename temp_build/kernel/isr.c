@@ -4,17 +4,20 @@
 #include "format.h"
 #include "sbi.h"
 #include "kernel.h"
+#include "ll_layer.h"
 
 __attribute__((interrupt("supervisor"))) __attribute__((aligned(4)))
 void  clk_handler() {
-    print("handling clock increment"); 
+    print("clock inc\n");
+
     time_remaining -= 1;
     if (time_remaining <= 0) {	    
     	reschedule_function();
     }
 
-    sbi_write_timer_offset((uint32_t) CLK_TICK, (uint32_t)(CLK_TICK >> 32));
-    print("Handled. ");
+    // sbi_write_timer_static(0xFFFFFFFF, 0xFF);
+
+    sbi_write_timer_offset((uint32_t) CLK_TICK, 0);
 }
 
 void advance_mepc(uint32_t by) {
