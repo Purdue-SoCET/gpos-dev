@@ -28,5 +28,6 @@
 #define PTE_PPN_SHIFT 10  /* remaining 10 bits are offset ; shift away to get page */
 #define RISCV_PGSHIFT 12
 #define RISCV_PGSIZE (1 << RISCV_PGSHIFT)
+#define SIZEOF_TRAPFRAME_T ((32 / 8) * 36)
 
 #endif

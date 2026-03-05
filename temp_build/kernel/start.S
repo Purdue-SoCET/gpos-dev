@@ -1,3 +1,6 @@
+#define SIZEOF_TRAPFRAME_T (4 * 36)
+#define STACK_TOP (__stack_top)
+
 .text
 .global boot
 .section .text.boot
@@ -39,7 +42,7 @@ boot:
     # TODO: Multicore support
     .option push
     .option norelax
-    la sp, __stack_top
+    la sp, STACK_TOP
     la gp, __global_pointer$
     .option pop
 
@@ -77,6 +80,9 @@ init_arr_calls:
 
 kernel_boot:
 start_m_mode_boot:
+    # set the scratch ptr for interrput stack 
+    addi sp, sp, -SIZEOF_TRAPFRAME_T
+    csrw mscratch, sp
     call m_mode_boot
 
 start_s_mode_boot:

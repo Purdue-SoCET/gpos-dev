@@ -1,13 +1,11 @@
 // See LICENSE for license details.
 
 #include <stdint.h>
-#include <string.h>
-#include <stdio.h>
-#include <format.h>
+#include "format.h"
 
+#include "str_ops.h"
 #include "riscv_test.h"
 
-#define SYS_write 64
 
 # define SATP_MODE_CHOICE SATP_MODE_SV32
 

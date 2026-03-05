@@ -13,8 +13,7 @@
 #include "riscv_test.h"
 #include "test_macros.h"
 
-
-#define STACK_TOP (_end + RISCV_PGSIZE * 4)
+#define STACK_TOP (__stack_top)
 
 .section ".text.init","ax",@progbits
   .globl _start

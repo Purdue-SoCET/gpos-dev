@@ -1,6 +1,6 @@
 MEMORY
 {
-  RAM : ORIGIN = 0x80000000, LENGTH = 1024M
+    RAM : ORIGIN = 0x80000000, LENGTH = 4M
 }
 
 ENTRY(boot)
@@ -56,7 +56,6 @@ SECTIONS
   }
 
   PROVIDE(__bss_end = .);
-  PROVIDE(_end = .);
   PROVIDE(__global_pointer$ = .);
 
   . = ALIGN(0x1000);
