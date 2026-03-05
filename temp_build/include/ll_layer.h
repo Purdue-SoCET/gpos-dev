@@ -3,6 +3,10 @@
 #ifndef _LL_LAYER_H_
 #define _LL_LAYER_H_
 
+/* mem linker addrs */
+#define DRAM_BASE          0x80000000
+
+/* MMIO addrs */
 #define MTIME_ADDR      0xFFFFFFE0
 #define MTIMEH_ADDR     0xFFFFFFE4
 #define MTIMECMP_ADDR   0xFFFFFFE8

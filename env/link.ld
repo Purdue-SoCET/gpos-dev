@@ -13,9 +13,6 @@ SECTIONS
   } > RAM
 
   . = ALIGN(0x1000);
-  .tohost : { *(.tohost) }
-
-  . = ALIGN(0x1000);
 
   .preinit_array :
   {
