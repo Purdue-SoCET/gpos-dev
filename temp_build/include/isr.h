@@ -26,8 +26,10 @@ typedef struct {
 } exception_context_t;
 
 // trap handlers
-void s_mode_trap_return(trapframe_t *tf) __attribute__((noreturn));
-void s_mode_trap_entry() __attribute__((noreturn));
+void s_mode_trap_return(trapframe_t *tf);
+void s_mode_trap_entry();
+void m_mode_trap_return(trapframe_t *tf);
+void m_mode_trap_entry();
 
 // Interrupt functions
 noreturn void unreachable_handler();
