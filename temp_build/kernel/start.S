@@ -81,9 +81,11 @@ init_arr_calls:
 
 kernel_boot:
 start_m_mode_boot:
-    # set the scratch ptr for interrput stack 
+    # set the scratch ptrs for interrput stack 
     addi sp, sp, -SIZEOF_TRAPFRAME_T
     csrw mscratch, sp
+    addi sp, sp, -SIZEOF_TRAPFRAME_T
+    csrw sscratch, sp
     call m_mode_boot
 
 start_s_mode_boot:
@@ -174,13 +176,6 @@ s_mode_trap_entry:
   # sp now points to trap frame and sscratch has user's sp
   csrrw sp, sscratch, sp
 
-  # store the user's SP into trapframe 
-  csrr t0, sscratch
-  sw   t0, 2*REGBYTES(sp)
-
-  # store trapframe back into sscratch
-  csrw sscratch, sp
-
   # save gprs
   sw  ra,1*REGBYTES(sp)
   sw  gp,3*REGBYTES(sp)
@@ -222,6 +217,13 @@ s_mode_trap_entry:
   sw  t0,34*REGBYTES(sp)
   csrr   t0,scause
   sw  t0,35*REGBYTES(sp)
+
+  # store the user's SP into trapframe 
+  csrr t0, sscratch
+  sw   t0, 2*REGBYTES(sp)
+
+  # store trapframe back into sscratch
+  csrw sscratch, sp
 
   # the trap frame is the first argument
   move  a0, sp
