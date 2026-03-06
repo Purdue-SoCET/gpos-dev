@@ -5,6 +5,7 @@
 #include "format.h"
 #include "sbi.h"
 #include "kernel.h"
+#include "vm.h"
 
 int queue[5] = {1, 2, 3, 4, 5};
 int index = 0;
@@ -19,7 +20,9 @@ void reschedule_function() {
 void s_mode_boot(void) {
     print("s_mode entered\n");
 
-    setup_interrupt_s_vectored(s_mode_table, IE_STIE);
+    // set up interrupts
+    // DIRECT MODE for our trap handlers
+    setup_interrupts_s(s_mode_trap_entry, IE_STIE);
     enable_interrupts_s();
     enable_prev_interrupts_s(); // so interrupts enabled in u-mode
 
@@ -46,5 +49,8 @@ void m_mode_boot() {
     delegate_traps_to_s(~(1 << EX_ECALL_SMODE), 0xFFFFFFFFu); //hard code to delegate all delegable ints to s mode for now
     print("finished delegating traps\n");
     //this is supposed to enter m-mode from s-mode and reach the timer handler supposedly
+
+    // load sscratch with trapframe location
+    CSRW("sscratch", CSRR("mscratch"));
     return;
 }

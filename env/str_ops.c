@@ -1,6 +1,4 @@
-#include <string.h>
-#include <stdint.h>
-#include <ctype.h>
+#include "str_ops.h"
 
 void* memcpy(void* dest, const void* src, size_t len)
 {

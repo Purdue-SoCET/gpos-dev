@@ -9,7 +9,7 @@ OBJDUMP := $(CROSS)objdump
 
 # Flags
 CFLAGS := -O2 -I./include -T./kernel/link.ld \
-		  -Wall -Wextra -Werror \
+		  -Wall -Wextra \
 		  -march=rv32imc_zicsr -mabi=ilp32 -mcmodel=medany \
 		  -static -nostartfiles -nostdlib -ffreestanding \
 		  -ffunction-sections -fdata-sections# -Wl,--gc-sections

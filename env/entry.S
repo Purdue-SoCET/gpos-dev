@@ -13,10 +13,9 @@
 #include "riscv_test.h"
 #include "test_macros.h"
 
+#define STACK_TOP (__stack_top)
 
-#define STACK_TOP (_end + RISCV_PGSIZE * 4)
-
-  .section ".text.init","ax",@progbits
+.section ".text.init","ax",@progbits
   .globl _start
   .align 2
 _start:
@@ -25,11 +24,11 @@ _start:
   /* NMI vector */
   .align 2
 nmi_vector:
-  j wtf
+  j bad_apple
 
   .align 2
 trap_vector:
-  j wtf
+  j bad_apple
 
 handle_reset:
   li x1, 0
@@ -80,7 +79,6 @@ pop_tf:
   LOAD  t0,33*REGBYTES(a0)
   csrw  sepc,t0
   LOAD  x1,1*REGBYTES(a0)
-  LOAD  x2,2*REGBYTES(a0)
   LOAD  x3,3*REGBYTES(a0)
   LOAD  x4,4*REGBYTES(a0)
   LOAD  x5,5*REGBYTES(a0)
@@ -119,6 +117,7 @@ trap_entry:
 
   # save gprs
   STORE  x1,1*REGBYTES(sp)
+  STORE  x2,2*REGBYTES(sp)
   STORE  x3,3*REGBYTES(sp)
   STORE  x4,4*REGBYTES(sp)
   STORE  x5,5*REGBYTES(sp)
@@ -164,9 +163,29 @@ trap_entry:
 
   move  a0, sp
   j handle_trap
+  
 
+.global bad_apple
+bad_apple:
+    li x28, 0
+    la x27, tohost
+    sw x28, 0(x27)
+    fence.i
+    j __sim_halt
+
+# what follows is a waterfall
 .global done
 done:
+    li x28, 1
+    la x27, tohost
+    sw x28, 0(x27)
+    fence.i
+
 .global __sim_halt
 __sim_halt:
   j __sim_halt
+
+.global tohost
+tohost: 
+  .dword 0
+  .size tohost, 8

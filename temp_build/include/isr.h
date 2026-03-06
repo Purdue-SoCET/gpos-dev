@@ -6,6 +6,15 @@
 #include <stdbool.h>
 #include <stdnoreturn.h>
 
+typedef struct
+{
+  uint32_t gpr[32];
+  uint32_t sr;
+  uint32_t epc;
+  uint32_t badvaddr;
+  uint32_t cause;
+} trapframe_t;
+
 typedef struct {
     uint32_t epc;
     uint32_t tval;
@@ -16,8 +25,14 @@ typedef struct {
     uint32_t dcache_misses;
 } exception_context_t;
 
+// trap handlers
+void s_mode_trap_return(trapframe_t *tf) __attribute__((noreturn));
+void s_mode_trap_entry() __attribute__((noreturn));
+
 // Interrupt functions
 noreturn void unreachable_handler();
+noreturn void default_handler();
+void  clk_handler();
 
 void read_exception_context(exception_context_t *);
 void read_exception_context_s(exception_context_t*);

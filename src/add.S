@@ -74,9 +74,15 @@ main:
   TEST_RR_ZEROSRC12( 37, add, 0 );
   TEST_RR_ZERODEST( 38, add, 16, 30 );
 
-  TEST_PASSFAIL
-
   j done
+
+fail:
+  li a0, 0 
+  ecall
+
+pass:
+  li a0, 1
+  ecall
 
   .data
 RVTEST_DATA_BEGIN

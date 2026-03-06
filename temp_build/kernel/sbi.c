@@ -7,7 +7,7 @@
  * a0-a5: parameters, if relevant
  */
 
-void sbi_write_timer_static(uint32_t l, uint32_t h) { 
+void sbi_write_timer_static(uint32_t l, uint32_t h) {
     asm volatile (
         "mv a0, %0\n\t"
         "mv a1, %1\n\t"

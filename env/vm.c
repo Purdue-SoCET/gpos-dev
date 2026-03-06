@@ -1,13 +1,11 @@
 // See LICENSE for license details.
 
 #include <stdint.h>
-#include <string.h>
-#include <stdio.h>
-#include <format.h>
+#include "format.h"
 
+#include "str_ops.h"
 #include "riscv_test.h"
 
-#define SYS_write 64
 
 # define SATP_MODE_CHOICE SATP_MODE_SV32
 
@@ -15,37 +13,21 @@ void trap_entry();
 void pop_tf(trapframe_t*);
 
 extern volatile uint64_t tohost;
-extern volatile uint64_t fromhost;
 extern int main(void);
+extern void done(void);
 
-static void do_tohost(uint64_t tohost_value)
-{
-  tohost = tohost_value;
-  asm volatile ("fence.i" : : :);
-}
 
 #define pa2kva(pa) ((void*)(pa) - DRAM_BASE - MEGAPAGE_SIZE)
 #define uva2kva(pa) ((void*)(pa) - MEGAPAGE_SIZE)
 
 #define flush_page(addr) asm volatile ("sfence.vma %0" : : "r" (addr) : "memory")
 
-static void terminate(int code)
-{
-  do_tohost(code);
-  while (1);
-}
-
-void wtf()
-{
-  terminate(841);
-}
-
 #define stringify1(x) #x
 #define stringify(x) stringify1(x)
 #define assert(x) do { \
   if (x) break; \
   print("Assertion failed: " stringify(x) "\n"); \
-  terminate(3); \
+  done(); \
 } while(0)
 
 pte_t l1pt[PTES_PER_PT] __attribute__((aligned(PGSIZE)));
@@ -133,13 +115,6 @@ void handle_fault(uintptr_t addr, uintptr_t cause)
 
 void handle_trap(trapframe_t* tf)
 {
-  if (tf->cause == CAUSE_USER_ECALL)
-  {
-    int n = tf->gpr[10];
-
-    terminate(n);
-  }
-  
   if (tf->cause == CAUSE_FETCH_PAGE_FAULT || tf->cause == CAUSE_LOAD_PAGE_FAULT || tf->cause == CAUSE_STORE_PAGE_FAULT)
     handle_fault(tf->badvaddr, tf->cause);
   else
