@@ -6,6 +6,15 @@
 #include <stdbool.h>
 #include <stdnoreturn.h>
 
+typedef struct
+{
+  long gpr[32];
+  long sr;
+  long epc;
+  long badvaddr;
+  long cause;
+} trapframe_t;
+
 typedef struct {
     uint32_t epc;
     uint32_t tval;
@@ -18,6 +27,8 @@ typedef struct {
 
 // Interrupt functions
 noreturn void unreachable_handler();
+noreturn void default_handler();
+void  clk_handler();
 
 void read_exception_context(exception_context_t *);
 void read_exception_context_s(exception_context_t*);

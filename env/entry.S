@@ -79,7 +79,6 @@ pop_tf:
   LOAD  t0,33*REGBYTES(a0)
   csrw  sepc,t0
   LOAD  x1,1*REGBYTES(a0)
-  LOAD  x2,2*REGBYTES(a0)
   LOAD  x3,3*REGBYTES(a0)
   LOAD  x4,4*REGBYTES(a0)
   LOAD  x5,5*REGBYTES(a0)
@@ -118,6 +117,7 @@ trap_entry:
 
   # save gprs
   STORE  x1,1*REGBYTES(sp)
+  STORE  x2,2*REGBYTES(sp)
   STORE  x3,3*REGBYTES(sp)
   STORE  x4,4*REGBYTES(sp)
   STORE  x5,5*REGBYTES(sp)
