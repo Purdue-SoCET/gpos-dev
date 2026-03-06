@@ -7,9 +7,9 @@
 .section .text.boot
 boot:
     # Zero-out regs
-    li x1, 0
-    li x2, 0
-    li x3, 0
+    li ra, 0
+    li sp, 0
+    li gp, 0
     li x4, 0
     li x5, 0
     li x6, 0
@@ -132,9 +132,9 @@ s_mode_trap_return:
   csrw sscratch, a0
 
   # restore gprs
-  lw  x1,1*REGBYTES(a0)
-  lw  x2,2*REGBYTES(a0)
-  lw  x3,3*REGBYTES(a0)
+  lw  ra,1*REGBYTES(a0)
+  lw  sp,2*REGBYTES(a0)
+  lw  gp,3*REGBYTES(a0)
   lw  x4,4*REGBYTES(a0)
   lw  x5,5*REGBYTES(a0)
   lw  x6,6*REGBYTES(a0)
@@ -182,8 +182,8 @@ s_mode_trap_entry:
   csrw sscratch, sp
 
   # save gprs
-  sw  x1,1*REGBYTES(sp)
-  sw  x3,3*REGBYTES(sp)
+  sw  ra,1*REGBYTES(sp)
+  sw  gp,3*REGBYTES(sp)
   sw  x4,4*REGBYTES(sp)
   sw  x5,5*REGBYTES(sp)
   sw  x6,6*REGBYTES(sp)
