@@ -1,6 +1,7 @@
 #include "sbi_macros.h"
 #define REGBYTES (4)
 
+.section .text
 .align 4
 .option push
 .option norvc
@@ -68,6 +69,7 @@ sbi_handler_end:
   # restore used registers
   # EXCEPT FOR A0
   lw ra,1*REGBYTES(sp)
+  lw t0,5*REGBYTES(sp)
   lw t1,6*REGBYTES(sp)
   lw t2,7*REGBYTES(sp)
   # skip a0 for opensbi
