@@ -8,11 +8,11 @@
 
 typedef struct
 {
-  long gpr[32];
-  long sr;
-  long epc;
-  long badvaddr;
-  long cause;
+  uint32_t gpr[32];
+  uint32_t sr;
+  uint32_t epc;
+  uint32_t badvaddr;
+  uint32_t cause;
 } trapframe_t;
 
 typedef struct {
@@ -24,6 +24,10 @@ typedef struct {
     uint32_t icache_misses;
     uint32_t dcache_misses;
 } exception_context_t;
+
+// trap handlers
+void s_mode_trap_return(trapframe_t *tf) __attribute__((noreturn));
+void s_mode_trap_entry() __attribute__((noreturn));
 
 // Interrupt functions
 noreturn void unreachable_handler();

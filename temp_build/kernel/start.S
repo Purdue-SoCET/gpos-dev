@@ -10,34 +10,34 @@ boot:
     li ra, 0
     li sp, 0
     li gp, 0
-    li x4, 0
-    li x5, 0
-    li x6, 0
-    li x7, 0
-    li x8, 0
-    li x9, 0
-    li x10, 0
-    li x11, 0
-    li x12, 0
-    li x13, 0
-    li x14, 0
-    li x15, 0
-    li x16, 0
-    li x17, 0
-    li x18, 0
-    li x19, 0
-    li x20, 0
-    li x21, 0
-    li x22, 0
-    li x23, 0
-    li x24, 0
-    li x25, 0
-    li x26, 0
-    li x27, 0
-    li x28, 0
-    li x29, 0
-    li x30, 0
-    li x31, 0
+    li tp, 0
+    li t0, 0
+    li t1, 0
+    li t2, 0
+    li s0, 0
+    li s1, 0
+    li a0, 0
+    li a1, 0
+    li a2, 0
+    li a3, 0
+    li a4, 0
+    li a5, 0
+    li a6, 0
+    li a7, 0
+    li s2, 0
+    li s3, 0
+    li s4, 0
+    li s5, 0
+    li s6, 0
+    li s7, 0
+    li s8, 0
+    li s9, 0
+    li s10, 0
+    li s11, 0
+    li t3, 0
+    li t4, 0
+    li t5, 0
+    li t6, 0
 
     # Set up SP, GP
     # TODO: Multicore support
@@ -135,33 +135,33 @@ s_mode_trap_return:
   lw  ra,1*REGBYTES(a0)
   lw  sp,2*REGBYTES(a0)
   lw  gp,3*REGBYTES(a0)
-  lw  x4,4*REGBYTES(a0)
-  lw  x5,5*REGBYTES(a0)
-  lw  x6,6*REGBYTES(a0)
-  lw  x7,7*REGBYTES(a0)
-  lw  x8,8*REGBYTES(a0)
-  lw  x9,9*REGBYTES(a0)
-  lw  x11,11*REGBYTES(a0)
-  lw  x12,12*REGBYTES(a0)
-  lw  x13,13*REGBYTES(a0)
-  lw  x14,14*REGBYTES(a0)
-  lw  x15,15*REGBYTES(a0)
-  lw  x16,16*REGBYTES(a0)
-  lw  x17,17*REGBYTES(a0)
-  lw  x18,18*REGBYTES(a0)
-  lw  x19,19*REGBYTES(a0)
-  lw  x20,20*REGBYTES(a0)
-  lw  x21,21*REGBYTES(a0)
-  lw  x22,22*REGBYTES(a0)
-  lw  x23,23*REGBYTES(a0)
-  lw  x24,24*REGBYTES(a0)
-  lw  x25,25*REGBYTES(a0)
-  lw  x26,26*REGBYTES(a0)
-  lw  x27,27*REGBYTES(a0)
-  lw  x28,28*REGBYTES(a0)
-  lw  x29,29*REGBYTES(a0)
-  lw  x30,30*REGBYTES(a0)
-  lw  x31,31*REGBYTES(a0)
+  lw  tp,4*REGBYTES(a0)
+  lw  t0,5*REGBYTES(a0)
+  lw  t1,6*REGBYTES(a0)
+  lw  t2,7*REGBYTES(a0)
+  lw  s0,8*REGBYTES(a0)
+  lw  s1,9*REGBYTES(a0)
+  lw  a1,11*REGBYTES(a0)
+  lw  a2,12*REGBYTES(a0)
+  lw  a3,13*REGBYTES(a0)
+  lw  a4,14*REGBYTES(a0)
+  lw  a5,15*REGBYTES(a0)
+  lw  a6,16*REGBYTES(a0)
+  lw  a7,17*REGBYTES(a0)
+  lw  s2,18*REGBYTES(a0)
+  lw  s3,19*REGBYTES(a0)
+  lw  s4,20*REGBYTES(a0)
+  lw  s5,21*REGBYTES(a0)
+  lw  s6,22*REGBYTES(a0)
+  lw  s7,23*REGBYTES(a0)
+  lw  s8,24*REGBYTES(a0)
+  lw  s9,25*REGBYTES(a0)
+  lw  s10,26*REGBYTES(a0)
+  lw  s11,27*REGBYTES(a0)
+  lw  t3,28*REGBYTES(a0)
+  lw  t4,29*REGBYTES(a0)
+  lw  t5,30*REGBYTES(a0)
+  lw  t6,31*REGBYTES(a0)
   lw  a0,10*REGBYTES(a0)
 
   # return
@@ -184,34 +184,34 @@ s_mode_trap_entry:
   # save gprs
   sw  ra,1*REGBYTES(sp)
   sw  gp,3*REGBYTES(sp)
-  sw  x4,4*REGBYTES(sp)
-  sw  x5,5*REGBYTES(sp)
-  sw  x6,6*REGBYTES(sp)
-  sw  x7,7*REGBYTES(sp)
-  sw  x8,8*REGBYTES(sp)
-  sw  x9,9*REGBYTES(sp)
-  sw  x10,10*REGBYTES(sp)
-  sw  x11,11*REGBYTES(sp)
-  sw  x12,12*REGBYTES(sp)
-  sw  x13,13*REGBYTES(sp)
-  sw  x14,14*REGBYTES(sp)
-  sw  x15,15*REGBYTES(sp)
-  sw  x16,16*REGBYTES(sp)
-  sw  x17,17*REGBYTES(sp)
-  sw  x18,18*REGBYTES(sp)
-  sw  x19,19*REGBYTES(sp)
-  sw  x20,20*REGBYTES(sp)
-  sw  x21,21*REGBYTES(sp)
-  sw  x22,22*REGBYTES(sp)
-  sw  x23,23*REGBYTES(sp)
-  sw  x24,24*REGBYTES(sp)
-  sw  x25,25*REGBYTES(sp)
-  sw  x26,26*REGBYTES(sp)
-  sw  x27,27*REGBYTES(sp)
-  sw  x28,28*REGBYTES(sp)
-  sw  x29,29*REGBYTES(sp)
-  sw  x30,30*REGBYTES(sp)
-  sw  x31,31*REGBYTES(sp)
+  sw  tp,4*REGBYTES(sp)
+  sw  t0,5*REGBYTES(sp)
+  sw  t1,6*REGBYTES(sp)
+  sw  t2,7*REGBYTES(sp)
+  sw  s0,8*REGBYTES(sp)
+  sw  s1,9*REGBYTES(sp)
+  sw  a0,10*REGBYTES(sp)
+  sw  a1,11*REGBYTES(sp)
+  sw  a2,12*REGBYTES(sp)
+  sw  a3,13*REGBYTES(sp)
+  sw  a4,14*REGBYTES(sp)
+  sw  a5,15*REGBYTES(sp)
+  sw  a6,16*REGBYTES(sp)
+  sw  a7,17*REGBYTES(sp)
+  sw  s2,18*REGBYTES(sp)
+  sw  s3,19*REGBYTES(sp)
+  sw  s4,20*REGBYTES(sp)
+  sw  s5,21*REGBYTES(sp)
+  sw  s6,22*REGBYTES(sp)
+  sw  s7,23*REGBYTES(sp)
+  sw  s8,24*REGBYTES(sp)
+  sw  s9,25*REGBYTES(sp)
+  sw  s10,26*REGBYTES(sp)
+  sw  s11,27*REGBYTES(sp)
+  sw  t3,28*REGBYTES(sp)
+  sw  t4,29*REGBYTES(sp)
+  sw  t5,30*REGBYTES(sp)
+  sw  t6,31*REGBYTES(sp)
 
   # get sr, epc, badvaddr, cause
   csrr   t0,sstatus
