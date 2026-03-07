@@ -3,11 +3,72 @@
 #include "csr.h"
 #include "isr.h"
 #include "format.h"
+#include "ll_layer.h"
 #include "sbi.h"
 #include "kernel.h"
 #include "vm.h"
 
-int queue[5] = {1, 2, 3, 4, 5};
+#define BADPID  (-1)
+#define NULLSTK 4096 //sizeof page
+#define NULLPROC  0
+
+struct procent proctab[NPROC]; //init process table
+
+static inline void init_proc_entry(pid32 pid)
+{
+    struct procent *p = &proctab[pid];
+
+    p->prstate   = PR_FREE;
+    p->prprio    = 0;
+    p->prstkptr  = (char*)0;
+    p->prstkbase = (char*)0;
+    p->prstklen  = 0;
+    p->prsem     = (sid32)BADPID;   //no semaphore
+    p->prparent  = (pid32)BADPID;   //no parent
+    // Clear saved context so stale register values don't leak in
+    memset(&p->ctx, 0, sizeof(p->ctx));
+}
+
+void init_proctab(void) {
+    for (pid32 pid = 0; pid < NPROC; pid++) {
+        init_proc_entry(pid);
+    } 
+}
+
+struct procent queue[NPROC]; // init process queue
+
+for (int i = 0; i < NPROC; i++) {
+    queue[i].prstate = PR_FREE;
+    queue[i].pid   = -1;
+}
+
+static uint8_t nullstk[NULLSTK] __attribute__((aligned(16)));
+
+//init nullprocess
+void nullproc_init(void)
+{
+    struct procent *p = &proctab[NULLPROC];
+
+    p->prstate   = PR_READY;      
+    p->prprio    = 0;            
+    p->prparent  = NULLPROC;      
+    p->prsem     = (sid32)BADPID; // no semaphore
+
+    p->prstkbase = (char*)nullstk;
+    p->prstklen  = NULLSTK;
+    p->prstkptr  = stack_top(nullstk, NULLSTK);
+
+    /*
+     * CRITICAL: seed the saved context to start at nullproc.
+     * This must match your ctxsw() restore convention.
+     *
+     * Most common: ctx has at least {sp, ra}.
+     */
+    p->ctx.sp = (uint32_t)p->prstkptr;
+    p->ctx.ra = (uint32_t)nullproc; //fake return address 
+}
+
+
 int index = 0;
 volatile uint64_t time_remaining = QUANTUM;
 
@@ -24,10 +85,6 @@ void s_mode_boot(void) {
     // DIRECT MODE for our trap handlers
     setup_interrupts_s(s_mode_trap_entry, IE_STIE);
     enable_interrupts_s();
-    enable_prev_interrupts_s(); // so interrupts enabled in u-mode
-
-    // set up recurrint clock handler
-    sbi_write_timer_offset((uint32_t) WAIT_INIT, (uint32_t)(WAIT_INIT >> 32));
     return;
 }
 

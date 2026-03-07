@@ -23,7 +23,14 @@ struct procent {
     //umsg    prmsg; //message sent to this process
     //bool8   prhasmsg; //Nonzero iff msg is valid
     //int16   prdesc[NDESC]; //device descriptors for process
+    context ctx;
 };
+
+struct context {
+    uint32_t ra;
+    uint32_t sp;
+    uint32_t s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11;
+} 
 
 extern struct procent proctab[NPROC];
 
