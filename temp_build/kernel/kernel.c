@@ -12,11 +12,11 @@
 #define NULLSTK 4096 //sizeof page
 #define NULLPROC  0
 
-struct procent proctab[NPROC]; //init process table
+procent_t proctab[NPROC]; //init process table
 
 static inline void init_proc_entry(pid32 pid)
 {
-    struct procent *p = &proctab[pid];
+    procent_t *p = &proctab[pid];
 
     p->prstate   = PR_FREE;
     p->prprio    = 0;
@@ -35,11 +35,12 @@ void init_proctab(void) {
     } 
 }
 
-struct procent queue[NPROC]; // init process queue
+pid32 ready_queue[NPROC]; // init process queue
 
-for (int i = 0; i < NPROC; i++) {
-    queue[i].prstate = PR_FREE;
-    queue[i].pid   = -1;
+void init_queue() {
+    for (int i = 0; i < NPROC; i++) {
+    ready_queue[i] = BADPID;
+}
 }
 
 static uint8_t nullstk[NULLSTK] __attribute__((aligned(16)));
@@ -47,7 +48,7 @@ static uint8_t nullstk[NULLSTK] __attribute__((aligned(16)));
 //init nullprocess
 void nullproc_init(void)
 {
-    struct procent *p = &proctab[NULLPROC];
+    procent_t *p = &proctab[NULLPROC];
 
     p->prstate   = PR_READY;      
     p->prprio    = 0;            
@@ -70,9 +71,13 @@ void nullproc_init(void)
 
 
 int index = 0;
+pid32 currpid = 0;
 volatile uint64_t time_remaining = QUANTUM;
 
-void reschedule_function() {
+
+//TODO Pop off process queue then switch trapframe pointer 
+
+void reschedule_function(trapframe_t *tf) {
     index++;
     time_remaining = QUANTUM;
     print("Index increments. Index at %d\n", index);
@@ -85,6 +90,18 @@ void s_mode_boot(void) {
     // DIRECT MODE for our trap handlers
     setup_interrupts_s(s_mode_trap_entry, IE_STIE);
     enable_interrupts_s();
+
+    init_proctab(); //fills in process table with empty entries
+    init_queue();
+    nullproc_init(); //initialize the null process
+
+    currpid = NULLPROC;
+    proctab[NULLPROC].prstate = PR_CURR;
+    
+
+    // TODO: fake return address from trap, write entry point of 
+    // nullprocess into sepc, write U mode into sstatus.spp then
+    // sret.
     return;
 }
 

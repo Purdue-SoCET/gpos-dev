@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <proc.h>
 
 #ifndef __KERNEL_H__
 #define __KERNEL_H__
@@ -29,8 +30,7 @@ void reschedule_function(void);
  * the first clock interrupt so it has time to jump to
  * u-mode. Stop hard-coding this. */
 #define WAIT_INIT ((uint64_t) 2000) 
-
-extern int queue[5];
+extern pid32 ready_queue[NPROC];
 extern int index ;
 extern uint64_t volatile time_remaining;
 
