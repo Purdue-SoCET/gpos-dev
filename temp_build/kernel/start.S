@@ -1,4 +1,6 @@
-#define SIZEOF_TRAPFRAME_T (4 * 36)
+#include "kernel.h"
+#include "proc.h"
+
 #define STACK_TOP (__stack_top)
 #define REGBYTES (4)
 
@@ -81,14 +83,55 @@ init_arr_calls:
 
 kernel_boot:
 start_m_mode_boot:
+    # TODO: STOP HARDCODING THIS AND HACKING INTO PTRS
     # set the scratch ptrs for interrput stack 
-    addi sp, sp, -SIZEOF_TRAPFRAME_T
-    csrw mscratch, sp
-    addi sp, sp, -SIZEOF_TRAPFRAME_T
-    csrw sscratch, sp
+
+    # t1 has SIZEOF_ISR_STACK bcz too big for 12 bits
+    li   t1, SIZEOF_ISR_STACK
+
+    # m-mode traps stacks r per-cpu usually
+    sub   sp, sp, t1
+    csrw  mscratch, sp
+
+    # Allocate the isr stack for the KERNEL
+    sub   sp, sp, t1
+    csrw  sscratch, sp
+
+    # set up loop. i starts at NPROC 
+    # its not nPROC - 1 bcz the first one was for the kernell
+    li    t0, NPROC
+
+isr_stack_delegation:
+    addi  t0, t0, -1 # decrement i by 1. break if < 0
+    blt   t0, x0, isr_stack_delegation_end
+    sub   sp, sp, t1
+    j isr_stack_delegation
+
+isr_stack_delegation_end:
+    # start actual stack delegation
+    # t1 has SIZEOF_THREAD_STACK bcz too big for 12 bits
+    li   t1, SIZEOF_THREAD_STACK
+
+    # currently at the top of thread stacks
+    mv    a1, sp    # save it as an argument
+
+    # set up loop
+    li    t0, NPROC
+
+thread_stack_delegation:
+    addi  t0, t0, -1
+    blt   t0, x0, thread_stack_delegation_end
+    sub   sp, sp, t1
+    j thread_stack_delegation
+
+thread_stack_delegation_end:
+    # ARGUMENT: load top of isr stack  
+    csrr  a0, sscratch
+    # a1 alr has stack thread beginnings
     call m_mode_boot
 
 start_s_mode_boot:
+    # TODO -- ALLOCATE MORE THAN TRAFRAME_T FOR ISR STACK
     # switch to s-mode
     li    t0, (3 << 11)  # clear mstatus.mpp
     csrc  mstatus, t0

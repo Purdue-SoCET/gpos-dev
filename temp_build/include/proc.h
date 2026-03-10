@@ -3,7 +3,7 @@
 #ifndef _PROC_H_
 #define _PROC_H_
 
-#define NPROC 64   /* max number of processes */
+#define NPROC 5   /* max number of processes */
 
 /* Process states */
 #define PR_FREE   0
@@ -11,6 +11,13 @@
 #define PR_CURR   2
 #define PR_SLEEP  3
 
+#ifndef __ASSEMBLER__
+
+
+// does not compile yet
+//
+//
+/*
 struct procent {
     uint16  prstate;
     pri16   prprio; //process priority
@@ -25,7 +32,9 @@ struct procent {
     //int16   prdesc[NDESC]; //device descriptors for process
 };
 
-extern struct procent proctab[NPROC];
 
+extern struct procent proctab[NPROC]; */
+
+#endif
 #endif
 
