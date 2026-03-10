@@ -13,6 +13,11 @@
 
 #ifndef __ASSEMBLER__
 
+
+// does not compile yet
+//
+//
+/*
 struct procent {
     uint16  prstate;
     pri16   prprio; //process priority
@@ -27,7 +32,8 @@ struct procent {
     //int16   prdesc[NDESC]; //device descriptors for process
 };
 
-extern struct procent proctab[NPROC];
+
+extern struct procent proctab[NPROC]; */
 
 #endif
 #endif

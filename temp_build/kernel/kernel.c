@@ -6,6 +6,7 @@
 #include "sbi.h"
 #include "kernel.h"
 #include "vm.h"
+#include "temp.h"
 
 int queue[5] = {1, 2, 3, 4, 5};
 int index = 0;
@@ -31,7 +32,9 @@ void s_mode_boot(void) {
     return;
 }
 
-void m_mode_boot(void* isr_stack_top, void* thread_stack_top) { 
+void m_mode_boot(void* isr_stack_top, void* thread_stack_top) {
+    setup_stacks(isr_stack_top, thread_stack_top);
+
     //kernel boot stuff later will get separated into kernel main or whatever
     setup_interrupts_m(m_mode_trap_entry, IE_MTIE | IE_MSIE | IE_MEIE); //
     print("m_mode table setup complete\n");
