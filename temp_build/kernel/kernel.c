@@ -90,6 +90,10 @@ void s_mode_boot(void) {
     // DIRECT MODE for our trap handlers
     setup_interrupts_s(s_mode_trap_entry, IE_STIE);
     enable_interrupts_s();
+    enable_prev_interrupts_s(); // so interrupts enabled in u-mode
+
+    // set up recurrint clock handler
+    sbi_write_timer_offset((uint32_t) WAIT_INIT, (uint32_t)(WAIT_INIT >> 32));
 
     init_proctab(); //fills in process table with empty entries
     init_queue();
