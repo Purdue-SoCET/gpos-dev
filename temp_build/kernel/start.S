@@ -112,13 +112,11 @@ isr_stack_delegation_end:
     # t1 has SIZEOF_THREAD_STACK bcz too big for 12 bits
     li   t1, SIZEOF_THREAD_STACK
 
-    # allocate FIRST thread stack
-    sub   sp, sp, t1
+    # currently at the top of thread stacks
     mv    a1, sp    # save it as an argument
 
     # set up loop
     li    t0, NPROC
-    addi  t0, t0, -1    # we alr did first one
 
 thread_stack_delegation:
     addi  t0, t0, -1
@@ -127,7 +125,7 @@ thread_stack_delegation:
     j thread_stack_delegation
 
 thread_stack_delegation_end:
-    # ARGUMENT: load null process sscratch into arg
+    # ARGUMENT: load top of isr stack  
     csrr  a0, sscratch
     # a1 alr has stack thread beginnings
     call m_mode_boot
