@@ -26,6 +26,8 @@
 
 #ifndef __ASSEMBLER__
 #include <stdint.h>
+#include <isr.h>
+#include <proc.h>
 
 extern void main(void);
 extern void m_mode_table(void);
@@ -33,11 +35,12 @@ extern void s_mode_table(void);
 extern void done(void);
 extern volatile int flag;
 
-void reschedule_function(void);
+void reschedule(void);
 
-extern int queue[5];
+extern pid32 ready_queue[NPROC];
 extern int index ;
 extern uint64_t volatile time_remaining;
+extern pid32 currpid;
 
 #endif
 #endif

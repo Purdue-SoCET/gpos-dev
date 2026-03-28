@@ -9,7 +9,7 @@ __attribute__((interrupt("supervisor"))) __attribute__((aligned(4)))
 void  clk_handler() {
     time_remaining -= 1;
     if (time_remaining <= 0) {	    
-    	reschedule_function();
+    	reschedule();
     }
 
     sbi_write_timer_offset((uint32_t) CLK_TICK, (uint32_t) (CLK_TICK >> 32));

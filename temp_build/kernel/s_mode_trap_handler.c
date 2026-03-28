@@ -21,10 +21,13 @@ void s_mode_trap_handler(trapframe_t *tf) {
     switch (masked_cause) {
       case 5:
         clk_handler();
+        //context switch here via last line of reschedule();
+        break;
       default:
         break;
     }
   }
+  //TODO THIS ALWAYS SCHEDULES THE SAME PROCESS AGAIN
   s_mode_trap_return(tf);
   __builtin_unreachable();
 }
