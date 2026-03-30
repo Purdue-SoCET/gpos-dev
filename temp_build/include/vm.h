@@ -40,6 +40,8 @@
 #define RISCV_PGSIZE (1 << RISCV_PGSHIFT)
 #define SIZEOF_TRAPFRAME_T ((32 / 8) * 36)
 
+#define pa2kva_asm(pa) (pa - DRAM_BASE - MEGAPAGE_SIZE)
+
 #ifndef __ASSEMBLER__
 
 #include "format.h"

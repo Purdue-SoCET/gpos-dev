@@ -97,7 +97,14 @@ start_m_mode_boot:
 
     # Allocate the isr stack for the KERNEL
     sub   sp, sp, t1
-    csrw  sscratch, sp
+    # csrw  sscratch, pa2kva_asm(sp)
+    # convert sscratch
+    csrr  t2, sscratch
+    li    t3, DRAM_BASE
+    sub   t2, t2, t3
+    li    t3, MEGAPAGE_SIZE
+    sub   t2, t2, t3
+    csrw  sscratch, t2
 
     # set up loop. i starts at NPROC 
     # its not nPROC - 1 bcz the first one was for the kernell
@@ -133,6 +140,12 @@ thread_stack_delegation_end:
     call m_mode_boot
 
 start_s_mode_boot:
+# convert sp
+    li    t0, DRAM_BASE
+    sub   sp, sp, t0
+    li    t0, MEGAPAGE_SIZE
+    sub   sp, sp, t0
+
     # TODO -- ALLOCATE MORE THAN TRAFRAME_T FOR ISR STACK
     # switch to s-mode
     li    t0, (3 << 11)  # clear mstatus.mpp
@@ -140,9 +153,10 @@ start_s_mode_boot:
     li    t0, (1 << 11)  # set mstatus.mpp to be s
     csrs  mstatus, t0
 
-    la    ra, start_main     # execute u-mode boot on ret
-    la    t0, s_mode_boot    # jump to s_mode_boot
+    la    ra, pa2kva_asm(start_main)     # execute u-mode boot on ret
+    la    t0, pa2kva_asm(s_mode_boot)    # jump to s_mode_boot
     csrw  mepc, t0
+
     mret
 
 start_main:

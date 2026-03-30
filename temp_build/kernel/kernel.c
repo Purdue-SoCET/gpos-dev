@@ -21,14 +21,10 @@ void s_mode_boot(void) {
     // we are in kva rn
     print("s_mode entered\n");
 
-    // set up interrupts
-    // DIRECT MODE for our trap handlers
-    setup_interrupts_s(s_mode_trap_entry, IE_STIE);
-    enable_interrupts_s();
     enable_prev_interrupts_s(); // so interrupts enabled in u-mode
 
     // set up recurrint clock handler
-    sbi_write_timer_offset((uint32_t) WAIT_INIT, (uint32_t)(WAIT_INIT >> 32));
+    // sbi_write_timer_offset((uint32_t) WAIT_INIT, (uint32_t)(WAIT_INIT >> 32));
     return;
 }
 
@@ -61,5 +57,8 @@ void m_mode_boot(void* isr_stack_top, void* thread_stack_top) {
     vm_boot();
     print("finish setting up vm\n");
 
-    return;
+    // set up interrupts
+    // DIRECT MODE for our trap handlers
+    setup_interrupts_s(pa2kva(s_mode_trap_entry), IE_STIE);
+    enable_interrupts_s();
 }

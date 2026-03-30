@@ -6,6 +6,7 @@
 static void* isr_stack_top;
 static void* thread_stack_top;
 
+// TODO -- BUG -- VIRTUAL MEM
 void setup_stacks(void* isr_stack, void* thread_stack) {
   isr_stack_top = isr_stack;
   thread_stack_top = thread_stack;
