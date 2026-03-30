@@ -101,7 +101,7 @@ void vm_boot()
   l1pt[PTES_PER_PT-1] = (DRAM_BASE/RISCV_PGSIZE << PTE_PPN_SHIFT) | PTE_V | PTE_R | PTE_W | PTE_X | PTE_A | PTE_D;
   uintptr_t vm_choice = SATP_MODE_CHOICE;
   uintptr_t satp_value = ((uintptr_t)l1pt >> PGSHIFT)
-                        | (vm_choice * (SATP_MODE_CHOICE & ~(SATP_MODE_CHOICE<<1)));
+                        | (vm_choice * (SATP_MODE & ~(SATP_MODE<<1)));
   CSRW("satp", satp_value);
   if (CSRR("satp") != satp_value)
     assert(!"unsupported satp mode");

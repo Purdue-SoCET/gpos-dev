@@ -7,6 +7,8 @@
 /* page table settings */
 #define SATP_MODE_SV32 1
 #define SATP_MODE_CHOICE SATP_MODE_SV32
+#define SATP32_MODE 0x80000000
+#define SATP_MODE SATP32_MODE
 
 // we are defining max test pages as bound by the random number generator 
 // due to the way we initializing the freelist mappings
