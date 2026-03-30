@@ -10,7 +10,7 @@ OBJDUMP := $(CROSS)objdump
 # Flags
 CFLAGS := -O2 -I./include -T./kernel/link.ld \
 		  -Wall -Wextra \
-		  -march=rv32imc_zicsr -mabi=ilp32 -mcmodel=medany \
+		  -march=rv32imc_zicsr_zifencei -mabi=ilp32 -mcmodel=medany \
 		  -static -nostartfiles -nostdlib -ffreestanding \
 		  -ffunction-sections -fdata-sections# -Wl,--gc-sections
 
@@ -50,7 +50,7 @@ all: $(ALL_ELFS) $(ALL_BINS) $(ALL_ASMS)
 # Rule to compile .c files
 $(BUILD_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -DENTROPY=0x$(shell echo $@ | md5sum | cut -c 1-7) -c $< -o $@
 
 # Rule to assemble .S files
 $(BUILD_DIR)/%.o: %.S

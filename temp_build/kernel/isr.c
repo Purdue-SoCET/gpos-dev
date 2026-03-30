@@ -157,9 +157,9 @@ void print_exception_context(exception_context_t *ctx) {
 }
 
 noreturn void __attribute__((interrupt)) __attribute__((aligned(4))) default_handler() {
-    exception_context_t ctx;
-    read_exception_context(&ctx);
-    print_exception_context(&ctx);
+    // exception_context_t ctx;
+    // read_exception_context(&ctx);
+    // print_exception_context(&ctx);
 
     print("Unexpected exception/interrupt; exiting\n");
     done();
@@ -167,9 +167,9 @@ noreturn void __attribute__((interrupt)) __attribute__((aligned(4))) default_han
 }
 
 noreturn void __attribute__((interrupt)) __attribute__((aligned(4))) unreachable_handler() {
-    exception_context_t ctx;
-    read_exception_context(&ctx);
-    print_exception_context(&ctx);
+    // exception_context_t ctx;
+    // read_exception_context(&ctx);
+    // print_exception_context(&ctx);
     print("EMERGENCY: THIS HARDWARE CONDITION DOES NOT EXIST AND CAN **NEVER** HAPPEN!\n");
     done();
     __builtin_unreachable();

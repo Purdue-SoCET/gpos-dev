@@ -1,4 +1,3 @@
-
 #include <stdint.h>
 #include "csr.h"
 #include "isr.h"
@@ -19,6 +18,7 @@ void reschedule_function() {
 }
 
 void s_mode_boot(void) {
+    // we are in kva rn
     print("s_mode entered\n");
 
     // set up interrupts
@@ -49,8 +49,17 @@ void m_mode_boot(void* isr_stack_top, void* thread_stack_top) {
                         "1: csrw mtvec, t0"
                         : : "r" (pmpc), "r" (pmpa) : "t0");       
     enable_interrupts_m();
-    delegate_traps_to_s(~(1 << EX_ECALL_SMODE), 0xFFFFFFFFu); //hard code to delegate all delegable ints to s mode for now
+
+    // hard code to delegate all delegable ints to s mode for now
+    // when we do individual delegations, TODO remember to configure ecalls from user,
+    // fetch page faults, load page faults, and store page faults
+    delegate_traps_to_s(~(1 << EX_ECALL_SMODE), 0xFFFFFFFFu); 
     print("finished delegating traps\n");
-    //this is supposed to enter m-mode from s-mode and reach the timer handler supposedly
+
+    // set up vm boot
+    print("setting up vm\n");
+    vm_boot();
+    print("finish setting up vm\n");
+
     return;
 }

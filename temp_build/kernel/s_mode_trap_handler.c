@@ -1,5 +1,6 @@
 #include "isr.h"
 #include "format.h"
+#include "vm.h"
 
 void s_mode_trap_handler(trapframe_t *tf) {
   // if exception
@@ -8,7 +9,7 @@ void s_mode_trap_handler(trapframe_t *tf) {
         case EX_INSN_PAGEFAULT:
         case EX_LOAD_PAGEFAULT:
         case EX_STORE_PAGEFAULT:
-            // handle_page_fault(tf);
+            handle_pagefault(tf->badvaddr, tf->cause);
             break;
         default:
             default_handler();
