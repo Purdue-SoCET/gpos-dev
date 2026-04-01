@@ -72,7 +72,7 @@ $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%
 
 # Rule to create disassembly with objdump
 $(BUILD_DIR)/%.asm: $(BUILD_DIR)/%
-	$(OBJDUMP) -d $< > $@
+	$(OBJDUMP) -D $< > $@
 
 # Clean build artifacts
 clean:

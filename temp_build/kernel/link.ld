@@ -1,19 +1,18 @@
 MEMORY
 {
     RAM : ORIGIN = 0x80000000, LENGTH = 4M
+    START : ORIGIN = 0x80001000, LENGTH = 4M
 }
 
 ENTRY(boot)
 
 SECTIONS
 {
-  .text :
-  {
-      *(.text.boot)
-      *(.text .text.*)
-  } > RAM
-
-  . = ALIGN(0x1000);
+  . = 0x80000000;
+  .text.boot :
+  { 
+    *(.text.boot)
+  }
 
   .preinit_array :
   {
@@ -36,6 +35,18 @@ SECTIONS
       KEEP(*(SORT_BY_INIT_PRIORITY(.fini_array.*) SORT_BY_INIT_PRIORITY(.dtors.*)));
       KEEP(*(.fini_array .dtors));
       PROVIDE(__fini_array_end = .);
+  }
+
+  . = ALIGN(0x1000);
+  .text.user :
+  { 
+    *(.text.user)
+  }
+
+  . = ALIGN(0x1000);
+  .text :
+  {
+    *(.text .text.*)
   }
 
   . = ALIGN(0x1000);

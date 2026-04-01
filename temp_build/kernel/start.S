@@ -145,8 +145,6 @@ check_flag:
 __sim_halt:
     j __sim_halt
 
-
-
 .data
 .global flag
 flag: .word 0xFF
