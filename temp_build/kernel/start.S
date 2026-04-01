@@ -120,18 +120,28 @@ start_s_mode_boot:
 
     mret
 
+.global start_main
+.section .text.user
 start_main:
     # switch to u-mode
     li    t0, (1 << 8)  #spp is (1 << 8)
     csrc  sstatus, t0
     
     la    ra, done                # upon main return, execute done()
+
     la    t0, main              # KVA of main = 0xFFC00000 + offset
     li    t1, MEGAPAGE_SIZE     # 0x400000
     add   t0, t0, t1            # wraps to just 'offset' = correct UVA
 
     # la    t0, main - DRAM_BASE    # convert for user mode virtual addressing
     csrw  sepc, t0
+
+    # convert sp into user-mode sp
+    mv    t0, sp
+    li    t1, MEGAPAGE_SIZE
+    add   t0, t0, t1
+    mv    sp, t0
+
     sret
 
 .global done

@@ -1,7 +1,6 @@
 MEMORY
 {
     RAM : ORIGIN = 0x80000000, LENGTH = 4M
-    START : ORIGIN = 0x80001000, LENGTH = 4M
 }
 
 ENTRY(boot)
@@ -71,6 +70,6 @@ SECTIONS
 
   . = ALIGN(0x1000);
   PROVIDE(__heap_start = .);
-  PROVIDE(__stack_top = ORIGIN(RAM) + LENGTH(RAM));
+  PROVIDE(__stack_top = ORIGIN(RAM) + 0x30000);
 }
 
