@@ -85,9 +85,6 @@ init_arr_calls:
 
 kernel_boot:
 start_m_mode_boot:
-    # TODO: STOP HARDCODING THIS AND HACKING INTO PTRS
-    # set the scratch ptrs for interrput stack 
-
     # t1 has SIZEOF_ISR_STACK bcz too big for 12 bits
     li   t1, SIZEOF_ISR_STACK
 
@@ -99,54 +96,18 @@ start_m_mode_boot:
     sub   sp, sp, t1
     # csrw  sscratch, pa2kva_asm(sp)
     # convert sscratch
-    mv    t2, sp
-    li    t3, DRAM_BASE
-    sub   t2, t2, t3
-    li    t3, MEGAPAGE_SIZE
-    sub   t2, t2, t3
-    csrw  sscratch, t2
+    mv    a0, sp
+    call  pa2kva_func
+    csrw  sscratch, a0
 
-    # set up loop. i starts at NPROC 
-    # its not nPROC - 1 bcz the first one was for the kernell
-    li    t0, NPROC
-
-isr_stack_delegation:
-    addi  t0, t0, -1 # decrement i by 1. break if < 0
-    blt   t0, x0, isr_stack_delegation_end
-    sub   sp, sp, t1
-    j isr_stack_delegation
-
-isr_stack_delegation_end:
-    # start actual stack delegation
-    # t1 has SIZEOF_THREAD_STACK bcz too big for 12 bits
-    li   t1, SIZEOF_THREAD_STACK
-
-    # currently at the top of thread stacks
-    mv    a1, sp    # save it as an argument
-
-    # set up loop
-    li    t0, NPROC
-
-thread_stack_delegation:
-    addi  t0, t0, -1
-    blt   t0, x0, thread_stack_delegation_end
-    sub   sp, sp, t1
-    j thread_stack_delegation
-
-thread_stack_delegation_end:
-    # ARGUMENT: load top of isr stack  
-    csrr  a0, sscratch
-    # a1 alr has stack thread beginnings
     call m_mode_boot
 
 start_s_mode_boot:
-# convert sp
-    li    t0, DRAM_BASE
-    sub   sp, sp, t0
-    li    t0, MEGAPAGE_SIZE
-    sub   sp, sp, t0
+    # convert sp into kva sp
+    mv    a0, sp
+    call  pa2kva_func
+    mv    sp, a0
 
-    # TODO -- ALLOCATE MORE THAN TRAFRAME_T FOR ISR STACK
     # switch to s-mode
     li    t0, (3 << 11)  # clear mstatus.mpp
     csrc  mstatus, t0
@@ -183,6 +144,8 @@ check_flag:
 .global __sim_halt
 __sim_halt:
     j __sim_halt
+
+
 
 .data
 .global flag

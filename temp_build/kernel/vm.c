@@ -119,3 +119,7 @@ void vm_boot()
   }
   freelist_nodes[MAX_TEST_PAGES-1].next = 0;
 }
+
+void* pa2kva_func(uint32_t pa) {
+  return (void*) pa2kva(pa);
+}

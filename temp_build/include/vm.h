@@ -83,5 +83,8 @@ extern freelist_t *freelist_tail;
 
 extern void vm_boot();
 extern void handle_pagefault(uintptr_t, uintptr_t);
+
+extern void* pa2kva_func(uint32_t pa);
+
 #endif
 #endif

@@ -24,13 +24,11 @@ void s_mode_boot(void) {
     enable_prev_interrupts_s(); // so interrupts enabled in u-mode
 
     // set up recurrint clock handler
-    sbi_write_timer_offset((uint32_t) WAIT_INIT, (uint32_t)(WAIT_INIT >> 32));
+    //sbi_write_timer_offset((uint32_t) WAIT_INIT, (uint32_t)(WAIT_INIT >> 32));
     return;
 }
 
-void m_mode_boot(void* isr_stack_top, void* thread_stack_top) {
-    setup_stacks(isr_stack_top, thread_stack_top);
-
+void m_mode_boot() {
     //kernel boot stuff later will get separated into kernel main or whatever
     setup_interrupts_m(m_mode_trap_entry, IE_MTIE | IE_MSIE | IE_MEIE); //
     print("m_mode table setup complete\n");
