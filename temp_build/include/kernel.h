@@ -22,7 +22,7 @@
 /* TODO: this is the time the kernel waits to fire
  * the first clock interrupt so it has time to jump to
  * u-mode. Stop hard-coding this. */
-#define WAIT_INIT ((uint64_t) 2000) 
+#define WAIT_INIT ((uint64_t) 3000) 
 
 #ifndef __ASSEMBLER__
 #include <stdint.h>

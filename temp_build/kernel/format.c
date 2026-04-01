@@ -2,12 +2,24 @@
 #include <stdint.h>
 #include "format.h"
 #include "ll_layer.h"
+#include "vm.h"
 
 void print_string(char *str) {
     for(int i = 0; str[i]; i++) {
         *MAGIC = str[i];
     }
 }
+
+/* bandaid start */
+
+void print_string_k(char *str) {
+    for(int i = 0; str[i]; i++) {
+        *((volatile uint32_t *) pa2kva(MAGIC)) = str[i];
+    }
+}
+
+/* bandaid end */
+
 
 static int 
 strcpy_no_nul(const char *source, char *sink) {
@@ -130,6 +142,26 @@ print(const char *fmt, ...) {
     vprint(fmt, args);
     va_end(args);
 }
+
+
+/* bandaid start */
+
+void __attribute__((noinline))
+vprint_k(const char *fmt, va_list args) {
+    char print_buf[128];
+    vformat(fmt, print_buf, args);
+    print_string_k(print_buf);
+}
+
+void __attribute__((noinline))
+print_k(const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    vprint_k(fmt, args);
+    va_end(args);
+}
+
+/* bandaid end */
 
 void __attribute__((noinline))
 format(const char *fmt, char *buf, ...) {

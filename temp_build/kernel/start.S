@@ -99,7 +99,7 @@ start_m_mode_boot:
     sub   sp, sp, t1
     # csrw  sscratch, pa2kva_asm(sp)
     # convert sscratch
-    csrr  t2, sscratch
+    mv    t2, sp
     li    t3, DRAM_BASE
     sub   t2, t2, t3
     li    t3, MEGAPAGE_SIZE

@@ -19,12 +19,12 @@ void reschedule_function() {
 
 void s_mode_boot(void) {
     // we are in kva rn
-    print("s_mode entered\n");
+    //print_k("s_mode entered\n");
 
     enable_prev_interrupts_s(); // so interrupts enabled in u-mode
 
     // set up recurrint clock handler
-    // sbi_write_timer_offset((uint32_t) WAIT_INIT, (uint32_t)(WAIT_INIT >> 32));
+    sbi_write_timer_offset((uint32_t) WAIT_INIT, (uint32_t)(WAIT_INIT >> 32));
     return;
 }
 
