@@ -62,7 +62,6 @@
 #define stringify(x) stringify1(x)
 #define assert(x) do { \
   if (x) break; \
-  print("Assertion failed: " stringify(x) "\n"); \
   done(); \
 } while(0)
 

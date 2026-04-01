@@ -118,7 +118,7 @@ bool check_supervisor_mode_available() {
 
 void require_supervisor_mode() {
     if(!check_supervisor_mode_available()) {
-        print("Enable Supervisor to run this test");
+        // print("Enable Supervisor to run this test");
         flag = -1; // set flag to 0xFFFF_FFFF to indicate fail
         done();
         __builtin_unreachable();
@@ -145,23 +145,12 @@ void read_exception_context_s(exception_context_t *ctx) {
     ctx->dcache_misses = CSRR("hpmcounter4");
 }
 
-void print_exception_context(exception_context_t *ctx) {
-    print("/**** EXCEPTION ****/\n");
-    print("cause   : %x\n", ctx->cause);
-    print("epc     : %x\n", ctx->epc);
-    print("tval    : %x\n", ctx->tval);
-    print("cycle   : %d\n", ctx->cycle);
-    print("time    : %d\n", ctx->time);
-    print("I$ miss : %d\n", ctx->icache_misses);
-    print("D$ miss : %d\n", ctx->dcache_misses);
-}
-
 noreturn void __attribute__((interrupt)) __attribute__((aligned(4))) default_handler() {
     // exception_context_t ctx;
     // read_exception_context(&ctx);
     // print_exception_context(&ctx);
 
-    print("Unexpected exception/interrupt; exiting\n");
+    // print("Unexpected exception/interrupt; exiting\n");
     done();
     __builtin_unreachable();
 }
@@ -170,7 +159,7 @@ noreturn void __attribute__((interrupt)) __attribute__((aligned(4))) unreachable
     // exception_context_t ctx;
     // read_exception_context(&ctx);
     // print_exception_context(&ctx);
-    print("EMERGENCY: THIS HARDWARE CONDITION DOES NOT EXIST AND CAN **NEVER** HAPPEN!\n");
+    // print("EMERGENCY: THIS HARDWARE CONDITION DOES NOT EXIST AND CAN **NEVER** HAPPEN!\n");
     done();
     __builtin_unreachable();
 }
