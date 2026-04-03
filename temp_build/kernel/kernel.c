@@ -4,6 +4,7 @@
 #include "isr.h"
 #include "format.h"
 #include "sbi.h"
+#include "syscall.h"
 #include "kernel.h"
 #include "vm.h"
 #include "temp.h"
@@ -38,6 +39,7 @@ static int rq_tail = 0;
 void rq_init() { //TODO SET NULLPROCESS AS PID0
     ready_queue[0] = NULLPROC;
     for (int i = 1; i < NPROC; i++) {
+        print("initialized process %d\n", i);
         ready_queue[i] = BADPID;
     }
 }
@@ -61,6 +63,15 @@ pid32 pick_next_pid(void) {
     return pid;
 }
 
+static pid32 newpid(void) {
+    for (pid32 pid = 1; pid < NPROC; pid++) {   // skip NULLPROC
+        if (proctab[pid].prstate == PR_FREE) {
+            return pid;
+        }
+    }
+    return BADPID;
+}
+
 //init nullprocess
 void  nullproc_init(void) {
     procent_t *p = &proctab[NULLPROC];
@@ -80,8 +91,7 @@ volatile uint64_t time_remaining = QUANTUM;
 
 //TODO Pop off process queue then switch trapframe pointer 
 
-void reschedule(void)
-{
+void reschedule(void) {
     
     pid32 old = currpid;
     pid32 next = pick_next_pid();
@@ -99,6 +109,69 @@ void reschedule(void)
 
     s_mode_trap_return((trapframe_t *) proctab[next].prstkptr);
     __builtin_unreachable();
+}
+
+void kill_process_kernel(void) // S-mode privileged kernel function
+{
+    pid32 pid = currpid;
+
+    proctab[pid].prstate = PR_FREE;
+    proctab[pid].prstkptr = 0;
+
+    reschedule();
+    __builtin_unreachable();
+}
+
+void kill(void) { //U-mode api that ecalls with exit code
+    register uint32_t a7 asm("a7") = SYS_EXIT; //load exit code into a7
+    asm volatile("ecall" : : "r"(a7) : "memory");
+    for (;;) { }
+}
+
+pid32 create_process_kernel(void (*func)(void)) { //privileged, S-mode facing
+    pid32 pid = newpid(); //grab a new free process 
+    if (pid == BADPID) {
+        return BADPID;
+    }
+
+    procent_t *p = &proctab[pid];
+
+    uintptr_t thread_stack_top = (uintptr_t)get_thread_stack_ptr(pid);
+    trapframe_t *tf = (trapframe_t *)get_isr_stack_ptr(pid);
+
+
+    for (size_t i = 0; i < sizeof(*tf); i++) {
+        ((uint8_t *)tf)[i] = 0;
+    }
+
+    tf->gpr[1] = (uint32_t)kill; // ra
+    tf->gpr[2] = (uint32_t)thread_stack_top; // sp, process executes in THREAD STACK
+    tf->epc    = (uint32_t)func; // whatever needs to be executed when this iss run
+    tf->sr     = SSTATUS_SPIE; // set SPP to 0 to start process in u mode??
+
+    p->prstkptr = (char *) tf; //points to top of isr stack
+    p->prstate  = PR_READY;
+
+    rq_push(pid);
+    return pid;
+}
+
+int create(void (*func)(void)) { //U-mode API to request ecall
+    // this function triggers an ecall, with SYS_CREATE code
+    // loaded into register a7, which is decoded and points to
+    // create_process_kernel() which should only be accessible
+    // via S-mode
+    register uint32_t a0 asm("a0") = (uint32_t)func;
+    register uint32_t a7 asm("a7") = SYS_CREAT;
+
+    asm volatile(
+        "ecall"
+        : "+r"(a0)
+        : "r"(a7)
+        : "memory"
+    ); 
+
+    return (int)a0;   // kernel returns pid in a0
 }
 
 void kernel_init(void) {
@@ -120,6 +193,8 @@ void s_mode_boot(void) {
     setup_interrupts_s(s_mode_trap_entry, IE_STIE);
     enable_interrupts_s();
     enable_prev_interrupts_s(); // so interrupts enabled in u-mode
+    kernel_init();
+    print("kernel initialized\n");
 
     // set up recurrint clock handler
     sbi_write_timer_offset((uint32_t) WAIT_INIT, (uint32_t)(WAIT_INIT >> 32));

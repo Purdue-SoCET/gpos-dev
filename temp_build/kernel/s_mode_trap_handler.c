@@ -1,5 +1,7 @@
 #include "isr.h"
 #include "format.h"
+#include "syscall.h"
+#include "kernel.h"
 
 void s_mode_trap_handler(trapframe_t *tf) {
   // if exception
@@ -9,6 +11,28 @@ void s_mode_trap_handler(trapframe_t *tf) {
         case EX_LOAD_PAGEFAULT:
         case EX_STORE_PAGEFAULT:
             // handle_page_fault(tf);
+            break;
+        case EX_ECALL_UMODE:
+          tf->epc += 4;   // skip the ecall instruction
+          switch (tf->gpr[17]) {   // gpr[17]= a7 = syscall number
+              case SYS_EXIT:
+                kill_process_kernel();
+                __builtin_unreachable();
+                break;
+
+              case SYS_CREAT:
+                tf->gpr[10] = create_process_kernel((void (*)(void))tf->gpr[10]);
+                break;
+
+              case SYS_YIELD:
+                  reschedule();
+                  __builtin_unreachable();
+                  break;
+
+              default:
+                  default_handler();
+                  break;
+            }
             break;
         default:
             default_handler();
