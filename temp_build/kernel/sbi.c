@@ -30,3 +30,14 @@ void sbi_write_timer_offset(uint32_t l, uint32_t h) {
 	    : "a0", "a1", "a6", "memory"	
     );
 }
+
+void sbi_print(char* str) {
+    asm volatile (
+    	"mv a0, %0\n\t"
+	    "li a6, %2\n\t"
+	    "ecall"
+	    :
+	    : "r"(str), "i"(SBI_PRINT)
+	    : "a0", "a6", "memory"	
+    );
+}

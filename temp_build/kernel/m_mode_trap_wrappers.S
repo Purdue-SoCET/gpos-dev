@@ -53,6 +53,12 @@ sbi_case_2:
   j sbi_handler_end
 
 sbi_case_3:
+  li t1, SBI_PRINT
+  bne a6, t1, sbi_case_4
+  call ll_print
+  j sbi_handler_end
+
+sbi_case_4:
   /* no op */
   j sbi_handler_end
 
