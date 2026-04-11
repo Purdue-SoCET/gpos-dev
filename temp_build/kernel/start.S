@@ -138,7 +138,7 @@ start_s_mode_boot:
     li    t0, (1 << 11)  # set mstatus.mpp to be s
     csrs  mstatus, t0
 
-    la    ra, start_main     # execute u-mode boot on ret
+    la    ra, s_mode_boot     # loop s_mode_boot, before was jump start_main
     la    t0, s_mode_boot    # jump to s_mode_boot
     csrw  mepc, t0
     mret

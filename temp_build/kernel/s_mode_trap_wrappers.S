@@ -6,6 +6,10 @@
 .option norvc
 .globl  s_mode_trap_return
 s_mode_trap_return:
+
+  lw   t0, 32*REGBYTES(a0)
+  csrw sstatus, t0
+
   # restore sepc 
   lw  t0,33*REGBYTES(a0)
   csrw  sepc,t0

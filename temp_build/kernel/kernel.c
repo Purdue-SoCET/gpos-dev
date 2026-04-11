@@ -33,20 +33,27 @@ void init_proctab(void) {
 pid32 ready_queue[NPROC]; // init process queue
 
 
-static int rq_head = 0;
-static int rq_tail = 0;
+static int rq_head;
+static int rq_tail;
 
 void rq_init() { //TODO SET NULLPROCESS AS PID0
-    ready_queue[0] = NULLPROC;
+    rq_head=0;
+    rq_tail = 0;
     for (int i = 1; i < NPROC; i++) {
-        print("initialized process %d\n", i);
+        //print("initialized process %d\n", i);
         ready_queue[i] = BADPID;
     }
 }
 
 void rq_push(pid32 pid) {
+    int next_tail = (rq_tail + 1) % NPROC;
+    if (next_tail == rq_head) {
+        print("ready queue full\n");
+        return;
+    }
+
     ready_queue[rq_tail] = pid;
-    rq_tail = (rq_tail + 1) % NPROC;
+    rq_tail = next_tail;
 }
 
 pid32 rq_pop(void) {
@@ -70,45 +77,6 @@ static pid32 newpid(void) {
         }
     }
     return BADPID;
-}
-
-//init nullprocess
-void  nullproc_init(void) {
-    procent_t *p = &proctab[NULLPROC];
-    p->prstate   = PR_READY;      
-    p->prstkptr  = get_isr_stack_ptr(0);//first ISR STACK 
-}
-
-
-int index = 0;
-volatile uint64_t time_remaining = QUANTUM;
-
-/*void reschedule_function() {
-    index++;
-    time_remaining = QUANTUM;
-    print("Index increments. Index at %d\n", index);
-*/
-
-//TODO Pop off process queue then switch trapframe pointer 
-
-void reschedule(void) {
-    
-    pid32 old = currpid;
-    pid32 next = pick_next_pid();
-
-    if (old == next) {
-        return;
-    }
-
-    if (old != NULLPROC && proctab[old].prstate == PR_CURR) {
-        proctab[old].prstate = PR_READY;
-    }
-
-    currpid = next;
-    proctab[next].prstate = PR_CURR;
-
-    s_mode_trap_return((trapframe_t *) proctab[next].prstkptr);
-    __builtin_unreachable();
 }
 
 void kill_process_kernel(void) // S-mode privileged kernel function
@@ -147,12 +115,13 @@ pid32 create_process_kernel(void (*func)(void)) { //privileged, S-mode facing
     tf->gpr[1] = (uint32_t)kill; // ra
     tf->gpr[2] = (uint32_t)thread_stack_top; // sp, process executes in THREAD STACK
     tf->epc    = (uint32_t)func; // whatever needs to be executed when this iss run
-    tf->sr     = SSTATUS_SPIE; // set SPP to 0 to start process in u mode??
+    tf->sr     = 0; // SET TO 0 DISABLE, DISABLES INTERRUPTS AFTER SRET, NEED TO BE ENABLED EVENTUALLY
 
     p->prstkptr = (char *) tf; //points to top of isr stack
     p->prstate  = PR_READY;
 
     rq_push(pid);
+    print("process created\n");
     return pid;
 }
 
@@ -172,6 +141,76 @@ int create(void (*func)(void)) { //U-mode API to request ecall
     ); 
 
     return (int)a0;   // kernel returns pid in a0
+}
+
+void nullproc_body(void) {
+    while (1) {
+        asm volatile("wfi");
+    }
+}
+
+//init nullprocess
+void  nullproc_init(void) {
+    procent_t *p = &proctab[NULLPROC];
+
+    uintptr_t thread_stack_top = (uintptr_t)get_thread_stack_ptr(NULLPROC);
+    trapframe_t *tf = (trapframe_t *)get_isr_stack_ptr(NULLPROC);
+
+    for (size_t i = 0; i < sizeof(*tf); i++) {
+        ((uint8_t *)tf)[i] = 0;
+    }
+
+    tf->gpr[1] = (uint32_t)kill;              // or exit stub if U-mode
+    tf->gpr[2] = (uint32_t)thread_stack_top;  // initial SP
+    tf->epc    = (uint32_t)nullproc_body;
+
+    tf->sr     = SSTATUS_SPIE;                // if returning to U-mode
+    // or different sr if we want nullproc in S-mode
+
+    p->prstate   = PR_READY;      
+    p->prstkptr  = get_isr_stack_ptr(0);//first ISR STACK 
+}
+
+
+
+
+int index = 0;
+volatile uint64_t time_remaining = QUANTUM;
+
+/*void reschedule_function() {
+    index++;
+    time_remaining = QUANTUM;
+    print("Index increments. Index at %d\n", index);
+*/
+
+//TODO Pop off process queue then switch trapframe pointer 
+
+void reschedule(void) {
+    
+    pid32 old = currpid;
+    pid32 next = pick_next_pid();
+    
+    if (old == next) {
+        return;
+    }
+
+    if (old != NULLPROC && proctab[old].prstate == PR_CURR) {
+        proctab[old].prstate = PR_READY;
+        rq_push(old);
+    }
+
+    currpid = next;
+    proctab[next].prstate = PR_CURR;
+    print("handling reschedule\n");
+    print("next: %d\n", next);
+    s_mode_trap_return((trapframe_t *) proctab[next].prstkptr);
+    __builtin_unreachable();
+}
+
+void print_processes() {
+    for (pid32 i = 0; i < NPROC; i++) {
+        print("state of process %d: %d\n", i, proctab[i].prstate);
+    }
 }
 
 void kernel_init(void) {
@@ -196,8 +235,16 @@ void s_mode_boot(void) {
     kernel_init();
     print("kernel initialized\n");
 
+    //create/schedule main()
+    create_process_kernel(main);
+    print_processes();
+    print("main created\n");
+    //reschedule();
+
+
     // set up recurrint clock handler
     sbi_write_timer_offset((uint32_t) WAIT_INIT, (uint32_t)(WAIT_INIT >> 32));
+
     return;
 }
 
