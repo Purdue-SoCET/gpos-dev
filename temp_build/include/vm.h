@@ -68,17 +68,13 @@
 typedef uint32_t pte_t; 
 
 typedef struct { 
-  pte_t addr; 
-  void* next; 
-} freelist_t;
+  uint32_t pa;  // physical addr of virtual page. 0 if unmapped
+} page_mapping_t;
 
 extern pte_t l1pt[PTES_PER_PT] __attribute__((aligned(PGSIZE)));
 extern pte_t l2pt_user[PTES_PER_PT] __attribute__((aligned(PGSIZE)));
 
-extern freelist_t user_mapping[MAX_TEST_PAGES];
-extern freelist_t freelist_nodes[MAX_TEST_PAGES];
-extern freelist_t *freelist_head;
-extern freelist_t *freelist_tail;
+extern page_mapping_t user_mapping[MAX_TEST_PAGES];
 
 extern void vm_boot();
 extern void handle_pagefault(uintptr_t, uintptr_t);

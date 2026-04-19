@@ -6,6 +6,7 @@
 #include "kernel.h"
 #include "vm.h"
 #include "temp.h"
+#include "pmm.h"
 
 int queue[5] = {1, 2, 3, 4, 5};
 int index = 0;
@@ -14,7 +15,7 @@ volatile uint64_t time_remaining = QUANTUM;
 void reschedule_function() {
     index++;
     time_remaining = QUANTUM;
-    print("Index increments. Index at %d\n", index);
+    //print("Index increments. Index at %d\n", index);
 }
 
 void s_mode_boot(void) {
@@ -24,7 +25,7 @@ void s_mode_boot(void) {
     enable_prev_interrupts_s(); // so interrupts enabled in u-mode
 
     // set up recurrint clock handler
-    //sbi_write_timer_offset((uint32_t) WAIT_INIT, (uint32_t)(WAIT_INIT >> 32));
+    sbi_write_timer_offset((uint32_t) WAIT_INIT, (uint32_t)(WAIT_INIT >> 32));
     return;
 }
 
@@ -49,6 +50,9 @@ void m_mode_boot() {
     // fetch page faults, load page faults, and store page faults
     delegate_traps_to_s(~(1 << EX_ECALL_SMODE), 0xFFFFFFFFu); 
     print("finished delegating traps\n");
+
+    // set up pmm
+    pmm_init();
 
     // set up vm boot
     print("setting up vm\n");

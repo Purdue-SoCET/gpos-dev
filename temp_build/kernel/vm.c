@@ -2,22 +2,19 @@
 #include "csr.h"
 #include "str_ops.h"
 #include "isr.h"
+#include "pmm.h"
 
 pte_t l1pt[PTES_PER_PT] __attribute__((aligned(PGSIZE)));
 pte_t l2pt_user[PTES_PER_PT] __attribute__((aligned(PGSIZE)));
-
-freelist_t user_mapping[MAX_TEST_PAGES];
-freelist_t freelist_nodes[MAX_TEST_PAGES];
-freelist_t *freelist_head, *freelist_tail;
+page_mapping_t user_mapping[MAX_TEST_PAGES];
 
 static void evict(unsigned long addr)
 {
   assert(addr >= PGSIZE && addr < MAX_TEST_PAGES * PGSIZE);
   addr = addr/PGSIZE*PGSIZE;
 
-  // TODO: do node.mapping or whatever, i don't like this readability man
-  freelist_t* node = &user_mapping[addr/PGSIZE];
-  if (node->addr)
+  page_mapping_t* mapping = &user_mapping[addr/PGSIZE];
+  if (mapping->pa)
   {
     // check accessed and dirty bits
     assert(l2pt_user[addr/PGSIZE] & PTE_A);
@@ -28,15 +25,10 @@ static void evict(unsigned long addr)
     }
     CSRW("sstatus", sstatus);
 
-    user_mapping[addr/PGSIZE].addr = 0;
-
-    if (freelist_tail == 0)
-      freelist_head = freelist_tail = node;
-    else
-    {
-      freelist_tail->next = node;
-      freelist_tail = node;
-    }
+    uint32_t pa = user_mapping[addr / PGSIZE].pa;
+    assert(pa != 0);
+    user_mapping[addr/PGSIZE].pa = 0;
+    pmm_free_page(pa);
   }
 }
 
@@ -60,19 +52,18 @@ void handle_pagefault(uintptr_t addr, uintptr_t cause)
     return;
   }
 
-  freelist_t* node = freelist_head;
-  assert(node);
-  freelist_head = node->next;
-  if (freelist_head == freelist_tail)
-    freelist_tail = 0;
+  // get physical frame from PMM
+  uint32_t pa = pmm_alloc_page();
+  assert(pa != 0);  // O means out of memory 
 
-  uintptr_t new_pte = (node->addr >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V | PTE_U | PTE_R | PTE_W | PTE_X;
+  uintptr_t new_pte = (pa >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V | PTE_U | PTE_R | PTE_W | PTE_X;
 
   l2pt_user[addr/PGSIZE] = new_pte | PTE_A | PTE_D;
   flush_page(addr);
 
-  assert(user_mapping[addr/PGSIZE].addr == 0);
-  user_mapping[addr/PGSIZE] = *node;
+  // record which PA backs thsi virtual page
+  assert(user_mapping[addr/PGSIZE].pa == 0);
+  user_mapping[addr/PGSIZE].pa = pa;
 
   uintptr_t sstatus = CSRRS("sstatus", SSTATUS_U_ACCESS);
   memcpy((void*)addr, uva2kva(addr), PGSIZE);
@@ -86,8 +77,6 @@ void handle_pagefault(uintptr_t addr, uintptr_t cause)
 
 void vm_boot()
 {
-  uint64_t random = ENTROPY;
-
   _Static_assert(SIZEOF_TRAPFRAME_T == sizeof(trapframe_t), "???");
 
 #if (MAX_TEST_PAGES > PTES_PER_PT) || (DRAM_BASE % MEGAPAGE_SIZE) != 0
@@ -106,18 +95,6 @@ void vm_boot()
   if (CSRR("satp") != satp_value)
     assert(!"unsupported satp mode");
   flush_page(DRAM_BASE);
-
-  // set up freelist
-  random = 1 + (random % MAX_TEST_PAGES);
-  freelist_head = pa2kva((void*)&freelist_nodes[0]);
-  freelist_tail = pa2kva(&freelist_nodes[MAX_TEST_PAGES-1]);
-  for (long i = 0; i < MAX_TEST_PAGES; i++)
-  {
-    freelist_nodes[i].addr = DRAM_BASE + (MAX_TEST_PAGES + random)*PGSIZE;
-    freelist_nodes[i].next = pa2kva(&freelist_nodes[i+1]);
-    random = LFSR_NEXT(random);
-  }
-  freelist_nodes[MAX_TEST_PAGES-1].next = 0;
 }
 
 void* pa2kva_func(uint32_t pa) {

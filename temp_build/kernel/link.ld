@@ -8,6 +8,8 @@ ENTRY(boot)
 SECTIONS
 {
   . = 0x80000000;
+  PROVIDE(_kernel_start = .);
+
   .text.boot :
   { 
     *(.text.boot)
@@ -71,5 +73,6 @@ SECTIONS
   . = ALIGN(0x1000);
   PROVIDE(__heap_start = .);
   PROVIDE(__stack_top = ORIGIN(RAM) + 0x30000);
+  PROVIDE(_kernel_end = .);
 }
 
