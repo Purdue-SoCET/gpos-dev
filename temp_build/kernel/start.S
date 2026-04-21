@@ -108,6 +108,12 @@ start_s_mode_boot:
     call  pa2kva_func
     mv    sp, a0
 
+    # convert gp into kva as well
+    # pa2kva offset is -DRAM_BASE - MEGAPAGE_SIZE = 0x7FC00000
+    lui   t0, 0x7fc00
+    add   gp, gp, t0
+
+
     # switch to s-mode
     li    t0, (3 << 11)  # clear mstatus.mpp
     csrc  mstatus, t0

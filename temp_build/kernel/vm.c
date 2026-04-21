@@ -5,42 +5,73 @@
 #include "pmm.h"
 
 pte_t l1pt[PTES_PER_PT] __attribute__((aligned(PGSIZE)));
-pte_t l2pt_user[PTES_PER_PT] __attribute__((aligned(PGSIZE)));
-page_mapping_t user_mapping[MAX_TEST_PAGES];
+
+// vpn: l1 index 
+// returns a pointer to l2 page table from the pmm
+static pte_t* get_or_alloc_l2(uint32_t vpn1) {
+    if (!(l1pt[vpn1] & PTE_V)) {
+        // No L2 table for this megapage yet — allocate one
+        uint32_t l2_pa = pmm_alloc_page();
+        assert(l2_pa != 0);
+        memset(pa2kva(l2_pa), 0, PGSIZE);  // zero it so all PTEs start invalid
+        l1pt[vpn1] = (l2_pa / RISCV_PGSIZE << PTE_PPN_SHIFT) | PTE_V;
+        asm volatile ("sfence.vma" ::: "memory");  // global flush after L1 change
+    }
+    // Extract PA of L2 table from the L1 entry and convert to KVA
+    return (pte_t*)pa2kva((l1pt[vpn1] >> PTE_PPN_SHIFT) * RISCV_PGSIZE);
+}
 
 static void evict(unsigned long addr)
 {
-  assert(addr >= PGSIZE && addr < MAX_TEST_PAGES * PGSIZE);
   addr = addr/PGSIZE*PGSIZE;
 
-  page_mapping_t* mapping = &user_mapping[addr/PGSIZE];
-  if (mapping->pa)
-  {
-    // check accessed and dirty bits
-    assert(l2pt_user[addr/PGSIZE] & PTE_A);
-    uintptr_t sstatus = CSRRS("sstatus", SSTATUS_U_ACCESS);
-    if (memcmp((void*)addr, uva2kva(addr), PGSIZE)) {
-      assert(l2pt_user[addr/PGSIZE] & PTE_D);
-      memcpy(uva2kva(addr), (void*)addr, PGSIZE);
-    }
-    CSRW("sstatus", sstatus);
+  uint32_t vpn1 = addr / MEGAPAGE_SIZE;
+  uint32_t vpn0 = (addr % MEGAPAGE_SIZE) / PGSIZE;
 
-    uint32_t pa = user_mapping[addr / PGSIZE].pa;
-    assert(pa != 0);
-    user_mapping[addr/PGSIZE].pa = 0;
-    pmm_free_page(pa);
+  // if no l2 table exists, no evicting needed
+  if (!(l1pt[vpn1] & PTE_V)) return; 
+
+  pte_t *l2 = (pte_t*) pa2kva((l1pt[vpn1] >> PTE_PPN_SHIFT) * RISCV_PGSIZE);
+  pte_t *pte_ptr = &l2[vpn0];
+
+  // if page isnt mapped, it doesnt mater
+  if (!(*pte_ptr & PTE_V)) return; 
+
+  assert(*pte_ptr & PTE_A);
+
+  uintptr_t sstatus = CSRRS("sstatus", SSTATUS_U_ACCESS);
+  if (memcmp((void*)addr, uva2kva(addr), PGSIZE)) {
+    assert(*pte_ptr & PTE_D);
+    memcpy(uva2kva(addr), (void*)addr, PGSIZE);
   }
+  CSRW("sstatus", sstatus);
+
+  // recover PA from PTE, invalidate, fre
+  uint32_t pa = (*pte_ptr >> PTE_PPN_SHIFT) * RISCV_PGSIZE;
+  assert(pa != 0);
+  *pte_ptr = 0; 
+  flush_page(addr);
+  pmm_free_page(pa);
 }
 
 void handle_pagefault(uintptr_t addr, uintptr_t cause)
 {
-  // this is hard-coded to reference l1pt[0]
-  // we can add more and additional logic so it's not hard-coded
-  assert(addr >= PGSIZE && addr < MAX_TEST_PAGES * PGSIZE);
   addr = addr/PGSIZE*PGSIZE;
+  assert(addr >= PGSIZE);
+
+  // l1 index
+  uint32_t vpn1 = addr / MEGAPAGE_SIZE; 
+  uint32_t vpn0 = (addr % MEGAPAGE_SIZE) / PGSIZE; // l2 indx
+
+  // guard ; only say user space can b lower half of addr space
+  assert(vpn1 < PTES_PER_PT / 2);
+
+  pte_t *l2 = get_or_alloc_l2(vpn1);
+  pte_t *pte_ptr = &l2[vpn0];
 
   // page table already loaded
-  pte_t* pte_ptr = &l2pt_user[addr/PGSIZE];
+  // but A or D needs 2 b set 
+  // A = accessed; D = dirty
   if (*pte_ptr) {
     if (!(*pte_ptr & PTE_A)) {
       *pte_ptr |= PTE_A;
@@ -52,24 +83,24 @@ void handle_pagefault(uintptr_t addr, uintptr_t cause)
     return;
   }
 
+  // demand alloc -- page has never been map
   // get physical frame from PMM
   uint32_t pa = pmm_alloc_page();
   assert(pa != 0);  // O means out of memory 
 
   uintptr_t new_pte = (pa >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V | PTE_U | PTE_R | PTE_W | PTE_X;
 
-  l2pt_user[addr/PGSIZE] = new_pte | PTE_A | PTE_D;
+  // install mapping so user VA is accessible under SUM 
+  // bcz if PTE_A or PTE_D is missing and the HW tries to access, it raises a fault
+  *pte_ptr = new_pte | PTE_A | PTE_D;
   flush_page(addr);
-
-  // record which PA backs thsi virtual page
-  assert(user_mapping[addr/PGSIZE].pa == 0);
-  user_mapping[addr/PGSIZE].pa = pa;
 
   uintptr_t sstatus = CSRRS("sstatus", SSTATUS_U_ACCESS);
   memcpy((void*)addr, uva2kva(addr), PGSIZE);
   CSRW("sstatus", sstatus);
-
-  l2pt_user[addr/PGSIZE] = new_pte;
+  
+  // reinstall w/o A+D so future accesses go thru soft update
+  *pte_ptr = new_pte;
   flush_page(addr);
 
   asm volatile ("fence.i");
@@ -83,9 +114,6 @@ void vm_boot()
 # error
 #endif
 
-  // map user to lowermost megapage
-  // hard-coded: there's only the user and kernel page tables
-  l1pt[0] = ((pte_t)l2pt_user >> PGSHIFT << PTE_PPN_SHIFT) | PTE_V;
   // map kernel to uppermost megapage
   l1pt[PTES_PER_PT-1] = (DRAM_BASE/RISCV_PGSIZE << PTE_PPN_SHIFT) | PTE_V | PTE_R | PTE_W | PTE_X | PTE_A | PTE_D;
   uintptr_t vm_choice = SATP_MODE_CHOICE;
