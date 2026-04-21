@@ -1,7 +1,7 @@
 #include "kernel.h"
+#include "proc.h"
 #include <stdlib.h>
 
-typedef uint32_t pid32;
 
 void setup_stacks(void* isr_stack, void* thread_stack);
 void* get_isr_stack_ptr(pid32 pid);
