@@ -13,6 +13,7 @@
 #define NULLSTK 4096 //sizeof page
 #define NULLPROC 0
 
+extern char __global_pointer$[];
 pid32 currpid = NULLPROC;
 
 procent_t proctab[NPROC]; //init process table
@@ -114,6 +115,7 @@ pid32 create_process_kernel(void (*func)(void)) { //privileged, S-mode facing
 
     tf->gpr[1] = (uint32_t)kill; // ra
     tf->gpr[2] = (uint32_t)thread_stack_top; // sp, process executes in THREAD STACK
+    tf->gpr[3] = (uint32_t) __global_pointer$;
     tf->epc    = (uint32_t)func; // whatever needs to be executed when this iss run
     tf->sr     = 0; // SET TO 0 DISABLE, DISABLES INTERRUPTS AFTER SRET, NEED TO BE ENABLED EVENTUALLY
 
@@ -162,6 +164,7 @@ void  nullproc_init(void) {
 
     tf->gpr[1] = (uint32_t)kill;              // or exit stub if U-mode
     tf->gpr[2] = (uint32_t)thread_stack_top;  // initial SP
+    tf->gpr[3] = (uint32_t) __global_pointer$;
     tf->epc    = (uint32_t)nullproc_body;
 
     tf->sr     = SSTATUS_SPIE;                // if returning to U-mode
@@ -200,9 +203,10 @@ void reschedule(void) {
     }
 
     currpid = next;
+    print("currpid during reschedule: %d\n", currpid);
     proctab[next].prstate = PR_CURR;
     print("handling reschedule\n");
-    print("next: %d\n", next);
+    print("next process: %d\n", next);
     s_mode_trap_return((trapframe_t *) proctab[next].prstkptr);
     __builtin_unreachable();
 }

@@ -14,6 +14,12 @@ void s_mode_trap_handler(trapframe_t *tf) {
             break;
         case EX_ECALL_UMODE:
           tf->epc += 4;   // skip the ecall instruction
+	        if (currpid != 0) { //nullproc
+            print("enabling interrupts\n");
+		        tf->sr = SSTATUS_SPIE;
+	        } else {
+            print("currpid is 0\n");
+          }
           switch (tf->gpr[17]) {   // gpr[17]= a7 = syscall number
               case SYS_EXIT:
                 kill_process_kernel();
@@ -21,6 +27,7 @@ void s_mode_trap_handler(trapframe_t *tf) {
                 break;
 
               case SYS_CREAT:
+                print("creating process\n");
                 tf->gpr[10] = create_process_kernel((void (*)(void))tf->gpr[10]);
                 break;
 

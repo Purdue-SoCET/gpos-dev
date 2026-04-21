@@ -114,6 +114,10 @@ s_mode_trap_entry:
   # the trap frame is the first argument
   move  a0, sp
 
+  .option push
+  .option norelax
+  la    gp, __global_pointer$
+  .option pop
   j s_mode_trap_handler 
 
 .option pop

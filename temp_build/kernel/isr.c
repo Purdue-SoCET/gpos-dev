@@ -9,6 +9,7 @@ __attribute__((interrupt("supervisor"))) __attribute__((aligned(4)))
 void  clk_handler() {
     time_remaining -= 1;
     if (time_remaining <= 0) {	
+        time_remaining = QUANTUM;
         print("rescheduling!\n");    
     	reschedule();
     }
